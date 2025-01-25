@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import Header from "./components/header";
 
 export default function Demande() {
   const [form, setForm] = useState({ nom: "", prenom: "", email: "" });
@@ -26,7 +27,9 @@ export default function Demande() {
   };
 
   return (
+   
     <div className="p-6">
+       <Header/>
       <h1 className="text-2xl font-bold mb-4">Créer une Demande</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
