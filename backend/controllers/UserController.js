@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
-const User = require('../models/userModel');
 const JWT = require('jsonwebtoken');
+const User = require('../models/userModel');
 
 // Fonction pour ajouter un utilisateur
 const userAdd = async (req, res) => {
@@ -9,13 +9,19 @@ const userAdd = async (req, res) => {
 
         // Validation des champs requis
         if (!nom || !prenom || !email || !password || !adresse || !telephone) {
-            return res.status(400).json({ error: 'Tous les champs sont obligatoires !' });
+            return res.status(400).json({
+                success: false,
+                message: 'Tous les champs sont obligatoires !',
+            });
         }
 
         // Vérifier si l'utilisateur existe déjà
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
+            return res.status(400).json({
+                success: false,
+                message: 'Cet email est déjà utilisé.',
+            });
         }
 
         // Hacher le mot de passe
@@ -28,29 +34,32 @@ const userAdd = async (req, res) => {
             email,
             password: hashedPassword,
             adresse,
-            telephone
+            telephone,
         });
 
         // Sauvegarder l'utilisateur dans la base de données
         await user.save();
 
-        // Retourner la réponse avec les détails de l'utilisateur
         res.status(201).json({
             success: true,
-            message: 'Utilisateur ajouté avec succès',
+            message: 'Utilisateur ajouté avec succès.',
             user: {
+                id: user._id,
                 nom: user.nom,
                 prenom: user.prenom,
                 email: user.email,
                 adresse: user.adresse,
                 telephone: user.telephone,
-                image: user.image, // Lien de l'image par défaut
-            }
+                image: user.image,
+            },
         });
-
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Problème lors de l\'ajout de l\'utilisateur.' });
+        res.status(500).json({
+            success: false,
+            message: 'Problème lors de l\'ajout de l\'utilisateur.',
+            error: error.message,
+        });
     }
 };
 
@@ -59,27 +68,96 @@ const getUsers = async (req, res) => {
     try {
         const users = await User.find();
 
-        // Vérifier si des utilisateurs existent
         if (!users || users.length === 0) {
-            return res.status(404).json({ message: 'Aucun utilisateur trouvé.' });
+            return res.status(404).json({
+                success: false,
+                message: 'Aucun utilisateur trouvé.',
+            });
         }
 
         res.status(200).json({
             success: true,
             users: users.map(user => ({
+                id: user._id,
                 nom: user.nom,
                 prenom: user.prenom,
                 email: user.email,
                 adresse: user.adresse,
                 telephone: user.telephone,
-                image: user.image, // Lien vers l'image
-            }))
+                image: user.image,
+            })),
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs.' });
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la récupération des utilisateurs.',
+            error: error.message,
+        });
     }
 };
 
-// Exporter les fonctions avec module.exports
-module.exports = { userAdd, getUsers };
+// Fonction pour gérer la connexion
+const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Validation des champs requis
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email et mot de passe sont obligatoires !',
+            });
+        }
+
+        // Vérifier si l'utilisateur existe
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Cet email n\'existe pas !',
+            });
+        }
+
+        // Comparer les mots de passe hachés
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: 'Le mot de passe est incorrect !',
+            });
+        }
+
+        // Générer un token JWT
+        const token = JWT.sign(
+            { _id: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Connexion réussie.',
+            user: {
+                id: user._id,
+                nom: user.nom,
+                prenom: user.prenom,
+                email: user.email,
+                adresse: user.adresse,
+                telephone: user.telephone,
+                image: user.image,
+            },
+            token,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la connexion.',
+            error: error.message,
+        });
+    }
+};
+
+// Exporter les fonctions
+module.exports = { userAdd, getUsers, login };

@@ -1,5 +1,5 @@
 const express = require("express");
-const { userAdd, getUsers } = require("../controllers/UserController");
+const { userAdd, getUsers ,login } = require("../controllers/UserController");
 
 const router = express.Router();
 
@@ -8,5 +8,7 @@ router.post('/add', userAdd);
 
 // Route pour récupérer tous les utilisateurs
 router.get('/all', getUsers);
+// route pour login
+router.post('/login',login);
 
 module.exports = router;
