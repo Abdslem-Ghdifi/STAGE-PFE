@@ -137,7 +137,7 @@ function CourseCard() {
                 />
               </div>
               <div className="mb-4 text-right">
-                <a href="#" className="text-blue-500 hover:underline">
+                <a href="" className="text-blue-500 hover:underline">
                   Mot de passe oublié ?
                 </a>
               </div>

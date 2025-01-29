@@ -36,8 +36,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     image: {
-      type: String, // Lien vers l'image
-      default: "https://via.placeholder.com/150", // Image par défaut
+      type: String,
     },
   },
   {
