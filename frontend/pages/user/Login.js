@@ -29,7 +29,7 @@ export default function Login() {
         localStorage.setItem("token", token); // Stocker le token JWT
 
         // Rediriger vers la page d'accueil ou une autre page protégée
-        router.push("./profile");
+        router.push("./accueil");
       }
     } catch (err) {
       // Si une erreur survient

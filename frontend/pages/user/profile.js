@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
-import Header from "./components/header";
 import Footer from "./components/footer";
+import Headerh from "./components/headerh";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -41,7 +41,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-blue-100 flex flex-col"> {/* Conteneur avec flex-col */}
-      <Header />
+      <Headerh />
       <div className="flex justify-center items-center py-12 flex-grow"> {/* Ajout de flex-grow pour pousser le footer */}
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md transition-transform transform hover:scale-105 hover:shadow-xl">
           <h2 className="text-3xl font-bold mb-6 text-center">Profil Utilisateur</h2>
