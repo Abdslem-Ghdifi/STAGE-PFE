@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-require('dotenv').config(); // Charger les variables d'environnement
+require('dotenv').config(); 
 
 // Fonction pour créer un transporteur (Gmail)
 async function createTransporter() {
