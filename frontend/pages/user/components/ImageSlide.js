@@ -6,22 +6,22 @@ function ImageSlider() {
     {
       src: "/images/image1.jpg",
       alt: "Image 1",
-      text: "Élargissez Vos Connaissances.",
+      text: "Élargissez Vos Connaissances. Découvrez de nouveaux sujets et acquérez une expertise dans votre domaine d'intérêt",
     },
     {
       src: "/images/image2.jpg",
       alt: "Image 2",
-      text: "Découvrez de nouveaux sujets et acquérez une expertise dans votre domaine d'intérêt.",
+      text: "Avec Screen Learning, accédez à vos formations à tout moment et sur n’importe quel appareil. Apprenez sans contrainte et suivez votre progression en temps réel.",
     },
     {
-      src: "/images/image3.webp",
+      src: "/images/image3.jpg",
       alt: "Image 3",
-      text: "Notre plateforme propose une large gamme de cours pour répondre à vos besoins.",
+      text: "Notre objectif est de vous offrir un accompagnement pédagogique efficace pour maximiser l’impact de votre formation.",
     },
     {
-      src: "/images/image2.jpg",
+      src: "/images/image4.jpg",
       alt: "Image 4",
-      text: "Découvrez dfghjklkjhgfds        dans votre domaine d'intérêt.",
+      text: "Prenez en main votre développement professionnel avec Screen Learning ! Explorez les formations disponibles et enrichissez vos compétences dès aujourd’hui.",
     },
   ];
 
@@ -49,9 +49,9 @@ function ImageSlider() {
           fade ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* Image et texte alternés */}
+        {/* Image avec effet arrondi et ombre */}
         <div
-          className={`w-2/5 h-[500px] relative rounded-3xl overflow-hidden shadow-2xl transform transition-transform duration-1000 ease-in-out ${
+          className={`w-2/5 h-[500px] relative rounded-3xl overflow-hidden shadow-lg transform transition-transform duration-1000 ease-in-out ${
             isEvenIndex ? "order-1" : "order-2"
           }`}
         >
@@ -64,20 +64,20 @@ function ImageSlider() {
           />
         </div>
 
-        {/* Texte */}
+        {/* Texte modernisé */}
         <div
-          className={`w-3/5 flex items-center justify-center ${
+          className={`w-3/5 flex items-center justify-center px-8 ${
             isEvenIndex ? "order-2 text-left" : "order-1 text-right"
           }`}
         >
-          <div className="p-8 rounded-3xl text-black text-3xl font-bold shadow-2xl transform transition-transform duration-1000 ease-in-out hover:scale-105">
-            <p>{images[currentImageIndex].text}</p>
-          </div>
+          <p className="text-black text-3xl font-semibold leading-snug transition-transform duration-1000 ease-in-out hover:scale-105">
+            {images[currentImageIndex].text}
+          </p>
         </div>
       </div>
 
-      {/* Boutons de navigation */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
+      {/* Boutons de navigation améliorés */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3">
         {images.map((_, index) => (
           <button
             key={index}
@@ -88,10 +88,10 @@ function ImageSlider() {
                 setFade(true);
               }, 500);
             }}
-            className={`w-4 h-4 rounded-full transition-all duration-300 ${
+            className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
               currentImageIndex === index
-                ? "bg-black scale-125"
-                : "bg-gray-500 hover:bg-gray-400"
+                ? "bg-blue-600 scale-125"
+                : "bg-gray-400 hover:bg-gray-500"
             }`}
           ></button>
         ))}

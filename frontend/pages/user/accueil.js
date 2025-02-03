@@ -6,7 +6,7 @@ import CoursCardH from "./components/courscardh";
 
 export default function Accueil() {
   return (
-    <div>
+    <div >
       <Headerh/>
       <Message/>
       <ImageSlider />

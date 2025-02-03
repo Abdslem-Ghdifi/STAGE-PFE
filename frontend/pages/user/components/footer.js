@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 function Footer() {
   return (
-    <footer 
+    <footer id='footer'
       className="bg-gray-700 text-white py-10 bg-cover bg-center relative"
       style={{ backgroundImage: "url('/images/hneya.jpg')" }}
     >
