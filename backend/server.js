@@ -7,6 +7,7 @@ const morgan = require("morgan");
 const QuestionRoute = require("./routes/QuestionRoute.js");
 const userRoute = require("./routes/userRoute.js")
 const demandeRoute = require('./routes/demandeRoute');
+const contactRoute =require ("./routes/contactRoute");
 dotenv.config();
 const app = express();
 
@@ -17,7 +18,8 @@ app.use(cors());
 
 // Routes
 app.use("/api/question", QuestionRoute); 
-app.use("/api/users",userRoute)
+app.use("/api/users",userRoute);
+app.use("/api/contact",contactRoute);
 // Utiliser les routes
 app.use('/api/demandes', demandeRoute);
 // Test route

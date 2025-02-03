@@ -4,15 +4,13 @@ require('dotenv').config();
 // Fonction pour créer un transporteur (Gmail)
 async function createTransporter() {
   try {
-    let transporter;
-
     // Utiliser Gmail comme service SMTP
-    transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
-            auth: {
-                user: process.env.GMAIL_USER, 
-                pass: process.env.GMAIL_PASS, 
-            },
+      auth: {
+        user: process.env.GMAIL_USER, 
+        pass: process.env.GMAIL_PASS, 
+      },
     });
 
     // Vérifier la connexion au serveur SMTP
@@ -32,17 +30,19 @@ exports.sendWelcomeEmail = async (to) => {
     console.log("Envoi à :", to);
 
     const mailOptions = {
-      from: '"Screen Learning" <noreply@votre-plateforme.com>', // Adresse d'expéditeur
+      from: '"Screen Learning" <noreply@votre-plateforme.com>', 
       to,
       subject: 'Bienvenue sur notre plateforme',
       text: 'Félicitations ! Votre demande a été acceptée. Cliquez sur ce lien pour terminer votre inscription.',
-      html: '<h1>Félicitations !</h1><p>Votre demande a été acceptée. Cliquez ici  <a href="http://localhost:3000/user/register"><h1>http://localhost:3000/user/register</h1></a> pour terminer votre inscription.</p>',
+      html: '<h1>Félicitations !</h1><p>Votre demande a été acceptée. Cliquez ici  <a href="http://localhost:3000/user/register">http://localhost:3000/user/register</a> pour terminer votre inscription.</p>',
     };
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email envoyé avec succès : %s', info.messageId);
+    return true;  // Retourner true si l'email a été envoyé avec succès
   } catch (error) {
     console.error('Erreur lors de l\'envoi de l\'email de bienvenue :', error);
+    return false;  // Retourner false si l'email n'a pas pu être envoyé
   }
 };
 
@@ -61,7 +61,9 @@ exports.sendRefuseEmail = async (to) => {
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email envoyé avec succès : %s', info.messageId);
+    return true;  // Retourner true si l'email a été envoyé avec succès
   } catch (error) {
     console.error('Erreur lors de l\'envoi de l\'email de refus :', error);
+    return false;  // Retourner false si l'email n'a pas pu être envoyé
   }
 };

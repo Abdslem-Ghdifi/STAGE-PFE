@@ -1,47 +1,59 @@
-import Link from 'next/link';
-import { useState } from 'react';
+import Link from "next/link";
+import { useState, useEffect } from "react";
 
 function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  const handleSignUpClick = () => {
-    window.location.href = '/demande'; // Redirige vers la page "demande"
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
 
-  const handleAboutClick = () => {
-    window.scrollTo({
-      top: document.body.scrollHeight,
-      behavior: 'smooth',
-    });
-  };
-
-  const handleFeedbackClick = () => {
-    window.scrollTo({
-      top: document.body.scrollHeight,
-      behavior: 'smooth',
-    });
-  };
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   return (
-    <header className="bg-white">
-      <div className="container mx-auto flex justify-between items-center py-4">
+    <header
+      className={`bg-white w-full z-50 transition-all duration-300 ${
+        isScrolled ? "fixed top-0 shadow-md py-1" : "relative py-4"
+      }`}
+    >
+      <div className="container mx-auto flex justify-between items-center px-6">
+        {/* Logo réduit lors du scroll */}
         <Link href="/">
-          <img src="/images/logo.png" alt="Logo ScreenLearning" width={150} height={50} />
+          <img
+            src="/images/logo.png"
+            alt="Logo ScreenLearning"
+            width={isScrolled ? 100 : 150} // Réduction du logo
+            height={isScrolled ? 40 : 50}
+            className="transition-all duration-300"
+          />
         </Link>
 
-        <h1 className="text-2xl font-bold text-blue-500">ScreenLearning</h1>
+        {/* Nom du site */}
+        <h1 className={`text-2xl font-bold text-blue-500 transition-all duration-300 ${isScrolled ? "text-lg" : "text-2xl"}`}>
+          ScreenLearning
+        </h1>
 
+        {/* Navigation */}
         <nav>
-          <ul className="flex space-x-4">
+          <ul className="flex space-x-6">
             <li>
               <Link href="/" className="text-blue-500 hover:underline">
                 Accueil
               </Link>
             </li>
             <li>
-              <button onClick={handleAboutClick} className="text-blue-500 hover:underline">
+              <Link href="#about" className="text-blue-500 hover:underline">
                 À propos
-              </button>
+              </Link>
             </li>
             <li>
               <Link href="../user/contact" className="text-blue-500 hover:underline">
@@ -51,27 +63,14 @@ function Header() {
           </ul>
         </nav>
 
-        <div>
-          {isLoggedIn ? (
-            <button
-              onClick={() => setIsLoggedIn(false)}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Se déconnecter
-            </button>
-          ) : (
-            <>
-              <Link href="../user/Login" className="text-blue-500 font-bold py-2 px-4 rounded">
-                Connexion
-              </Link>
-              <button
-                onClick={handleSignUpClick}
-                className="text-green-500 font-bold py-2 px-4 rounded"
-              >
-                Inscription
-              </button>
-            </>
-          )}
+        {/* Boutons d'authentification */}
+        <div className="flex space-x-4">
+          <Link href="../user/Login" className="text-blue-500 font-bold">
+            Connexion
+          </Link>
+          <Link href="../user/demande" className="text-green-500 font-bold">
+            Inscription
+          </Link>
         </div>
       </div>
     </header>

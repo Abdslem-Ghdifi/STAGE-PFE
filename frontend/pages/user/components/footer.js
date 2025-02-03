@@ -2,8 +2,12 @@ import Link from 'next/link';
 
 function Footer() {
   return (
-    <footer className="bg-gray-700 text-white py-10 bg-cover bg-center" style={{ backgroundImage: "url('/images/hneya.png')", backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer 
+      className="bg-gray-700 text-white py-10 bg-cover bg-center relative"
+      style={{ backgroundImage: "url('/images/hneya.jpg')" }}
+    >
+      <div className="absolute inset-0 bg-gray-800 bg-opacity-70"></div>
+      <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10 p-6">
         
         {/* About Us section */}
         <div>
@@ -31,7 +35,7 @@ function Footer() {
         </div>
 
         {/* Copyright section */}
-        <div className="md:text-right">
+        <div className="md:text-right md:col-span-3">
           <p className="text-sm">&copy; {new Date().getFullYear()} ScreenLearning. Tous droits réservés.</p>
         </div>
       </div>

@@ -36,19 +36,28 @@ exports.respondDemande = async (req, res) => {
       return res.status(404).json({ message: 'Demande non trouvée.' });
     }
 
+    let emailSent = false;
+
     if (action === 'accept') {
       demande.status = 'accepted';
       // Envoyer un email de bienvenue
-      await nodemailer.sendWelcomeEmail(demande.email);
+      emailSent = await nodemailer.sendWelcomeEmail(demande.email);
     } else if (action === 'refuse') {
       demande.status = 'refused';
       // Envoyer un email de refus
-      await nodemailer.sendRefuseEmail(demande.email);
+      emailSent = await nodemailer.sendRefuseEmail(demande.email);
     }
 
-    await demande.save();
-    res.status(200).json({ message: `Demande ${action === 'accept' ? 'acceptée' : 'refusée'}.` });
+    // Si l'email a bien été envoyé, supprimer la demande
+    if (emailSent) {
+      // Utilisation de deleteOne() pour supprimer la demande
+      await Demande.deleteOne({ _id: id });
+      return res.status(200).json({ message: `Demande ${action === 'accept' ? 'acceptée' : 'refusée'} et supprimée avec succès.` });
+    } else {
+      return res.status(500).json({ message: 'Erreur lors de l\'envoi de l\'email.' });
+    }
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: 'Erreur lors de l\'action sur la demande.' });
   }
 };
