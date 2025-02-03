@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 function Footer() {
   return (
-    <footer className="bg-gray-800 text-white py-8">
+    <footer className="bg-gray-700 text-white py-10 bg-cover bg-center" style={{ backgroundImage: "url('/images/hneya.png')", backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         
         {/* About Us section */}
@@ -34,7 +34,6 @@ function Footer() {
         <div className="md:text-right">
           <p className="text-sm">&copy; {new Date().getFullYear()} ScreenLearning. Tous droits réservés.</p>
         </div>
-
       </div>
     </footer>
   );

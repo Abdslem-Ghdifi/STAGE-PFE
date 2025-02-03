@@ -4,17 +4,17 @@ import Image from 'next/image';
 function ImageSlider() {
   const images = [
     {
-      src: '/images/image1.jpg',
+      src: '/images/image1.webp',
       alt: 'Image 1',
       text: 'Expand Your Knowledge.',
     },
     {
-      src: '/images/image2.jpg',
+      src: '/images/image2.webp',
       alt: 'Image 2',
       text: 'Discover new subjects and gain expertise in your area of interest.',
     },
     {
-      src: '/images/image3.jfif',
+      src: '/images/image3.webp',
       alt: 'Image 3',
       text: 'Our platform offers a wide range of courses to cater to your needs.',
     },

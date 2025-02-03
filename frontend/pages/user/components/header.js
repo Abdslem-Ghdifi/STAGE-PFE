@@ -44,9 +44,9 @@ function Header() {
               </button>
             </li>
             <li>
-              <button onClick={handleFeedbackClick} className="text-blue-500 hover:underline">
-                Avis
-              </button>
+              <Link href="../user/contact" className="text-blue-500 hover:underline">
+                Contact
+              </Link>
             </li>
           </ul>
         </nav>
