@@ -47,7 +47,7 @@ function Headerh() {
   const handleLogoutClick = () => {
     setIsLoggedIn(false);
     localStorage.removeItem("user"); 
-    router.push('/login');
+    router.push('/');
   };
 
   const handleScrollToFooter = (event) => {
@@ -104,7 +104,7 @@ function Headerh() {
               </button>
             </>
           ) : (
-            <Link href="/login" className="text-blue-500 font-bold">Connexion</Link>
+            <Link href="/" className="text-blue-500 font-bold">Connexion</Link>
           )}
         </div>
       </div>

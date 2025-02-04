@@ -33,8 +33,8 @@ function Header() {
           <img
             src="/images/logo.png"
             alt="Logo ScreenLearning"
-            width={isScrolled ? 120 : 150}
-            height={isScrolled ? 40 : 50}
+            width={isScrolled ? 120 : 200}
+            height={isScrolled ? 40 : 75}
             className="transition-all duration-300"
           />
         </Link>

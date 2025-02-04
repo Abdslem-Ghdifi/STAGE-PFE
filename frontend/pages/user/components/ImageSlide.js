@@ -35,7 +35,7 @@ function ImageSlider() {
         setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
         setFade(true);
       }, 50);
-    }, 7000);
+    }, 10000); // Changement toutes les 10 secondes
 
     return () => clearInterval(intervalId);
   }, [images.length]);
@@ -45,7 +45,7 @@ function ImageSlider() {
   return (
     <div className="relative w-full h-[600px] flex items-center justify-center px-10 overflow-hidden">
       <div
-        className={`absolute inset-0 flex items-center justify-between gap-8 transition-opacity duration-1000 ease-in-out ${
+        className={`absolute inset-0 flex items-center justify-between gap-8 transition-opacity duration-10000 ease-in-out ${
           fade ? "opacity-100" : "opacity-0"
         }`}
       >
@@ -70,7 +70,7 @@ function ImageSlider() {
             isEvenIndex ? "order-2 text-left" : "order-1 text-right"
           }`}
         >
-          <p className="text-black text-3xl font-semibold leading-snug transition-transform duration-1000 ease-in-out hover:scale-105">
+          <p className="text-black text-3xl font-semibold leading-snug transition-transform duration-10000 ease-in-out hover:scale-105">
             {images[currentImageIndex].text}
           </p>
         </div>
@@ -88,7 +88,7 @@ function ImageSlider() {
                 setFade(true);
               }, 500);
             }}
-            className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
               currentImageIndex === index
                 ? "bg-blue-600 scale-125"
                 : "bg-gray-400 hover:bg-gray-500"

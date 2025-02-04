@@ -42,38 +42,26 @@ function CourseCard() {
   ];
 
   const [showLogin, setShowLogin] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Gérer les changements dans le formulaire
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Gérer la soumission du formulaire de connexion
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null); // Reset error before submitting
+    setError(null);
 
     try {
       const response = await axios.post('http://localhost:8080/api/users/login', formData);
-
       if (response.status === 200) {
-        // Connexion réussie
         alert('Connexion réussie !');
-        setShowLogin(false); // Fermer la modale après la connexion
+        setShowLogin(false);
       }
     } catch (err) {
-      // Gérer l'erreur si la connexion échoue
       setError(err.response?.data?.error || 'Erreur lors de la connexion');
     } finally {
       setLoading(false);
@@ -81,17 +69,17 @@ function CourseCard() {
   };
 
   return (
-    <div className="container mx-auto py-12">
-      <h1 className="text-4xl font-bold mb-6">Nos Cours</h1>
+    <div className="container mx-auto py-12 text-center">
+      <h1 className="text-4xl font-bold text-[#001F3F] mb-6">Nos Cours</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {courses.map((course) => (
-          <div key={course.title} className="bg-white shadow-md rounded-lg p-6">
-            <img src={course.image} alt={course.title} className="rounded-t-lg" />
-            <h2 className="text-xl font-medium mt-4">{course.title}</h2>
-            <p className="text-gray-700">{course.description}</p>
+          <div key={course.title} className="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition duration-300">
+            <img src={course.image} alt={course.title} className="rounded-lg w-32 h-30 mx-auto object-cover" />
+            <h2 className="text-xl font-semibold mt-4">{course.title}</h2>
+            <p className="text-gray-700 mt-2">{course.description}</p>
             <button
               onClick={() => setShowLogin(true)}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4"
+              className="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded mt-4 transition duration-300"
             >
               Commencer l'apprentissage
             </button>
@@ -99,7 +87,6 @@ function CourseCard() {
         ))}
       </div>
 
-      {/* Carte de connexion (modale) */}
       {showLogin && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-[400px]">
@@ -107,9 +94,7 @@ function CourseCard() {
             {error && <div className="text-red-500 mb-4 text-center">{error}</div>}
             <form onSubmit={handleLoginSubmit}>
               <div className="mb-4">
-                <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
-                  Adresse e-mail
-                </label>
+                <label htmlFor="email" className="block text-gray-700 font-medium mb-2">Adresse e-mail</label>
                 <input
                   type="email"
                   id="email"
@@ -122,9 +107,7 @@ function CourseCard() {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="password" className="block text-gray-700 font-medium mb-2">
-                  Mot de passe
-                </label>
+                <label htmlFor="password" className="block text-gray-700 font-medium mb-2">Mot de passe</label>
                 <input
                   type="password"
                   id="password"
@@ -136,14 +119,9 @@ function CourseCard() {
                   placeholder="Entrez votre mot de passe"
                 />
               </div>
-              <div className="mb-4 text-right">
-                <a href="" className="text-blue-500 hover:underline">
-                  Mot de passe oublié ?
-                </a>
-              </div>
               <button
                 type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                className="w-full bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded"
                 disabled={loading}
               >
                 {loading ? 'Chargement...' : 'Se connecter'}

@@ -22,9 +22,8 @@ export default function Vidimg() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-5xl mx-auto mt-10 pb-10">
-      {/* Image en arrière-plan avec hauteur ajustable */}
-      <div className="relative w-full h-[815px]"> {/* Modifie h-[800px] pour ajuster la hauteur */}
+    <div className="relative w-full max-w-3xl mx-auto mt-10 pb-10">
+      <div className="relative w-full h-[600px]"> 
         <Image
           src="/images/imgreel.jpg"
           alt="Thumbnail"
@@ -34,8 +33,7 @@ export default function Vidimg() {
         />
       </div>
 
-      {/* Vidéo par-dessus avec position ajustable */}
-      <div className="absolute top-[34%] left-[11%]  -translate-y-1/2 z-10">
+      <div className="absolute top-[33.1%] left-[11%] -translate-y-1/2 z-10">
         <video
           ref={videoRef}
           src="/images/vidreel.mp4"
@@ -43,7 +41,7 @@ export default function Vidimg() {
           loop
           playsInline
           muted
-          className="w-[800px] h-[850px] rounded-lg" // Ajuste la taille ici
+          className="w-[600px] h-[650px] rounded-lg" 
         />
       </div>
     </div>
