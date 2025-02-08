@@ -10,7 +10,7 @@ const QuestionRoute = require("./routes/QuestionRoute.js");
 const userRoute = require("./routes/userRoute.js");
 const demandeRoute = require("./routes/demandeRoute");
 const contactRoute = require("./routes/contactRoute");
-
+const adminRoute = require('./routes/adminRoute');
 dotenv.config();
 const app = express();
 
@@ -28,6 +28,7 @@ app.use(
 // Routes
 app.use("/api/question", QuestionRoute);
 app.use("/api/users", userRoute);
+app.use("/api/admin", adminRoute);
 app.use("/api/contact", contactRoute);
 app.use("/api/demandes", demandeRoute);
 

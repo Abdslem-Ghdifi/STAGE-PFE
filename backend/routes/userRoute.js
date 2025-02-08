@@ -1,9 +1,17 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs"); // Pour comparer les mots de passe
 const router = express.Router();
-const { userAdd, getUsers, upload, uploadImage, getUserProfile } = require("../controllers/UserController");
+const User = require("../models/userModel"); // Assure-toi d'importer ton modèle utilisateur
 const { forgetPass } = require("../controllers/passController");
-
+const { userAdd, getUsers, upload, uploadImage, getUserProfile } = require("../controllers/UserController");
+const {authenticateToken} = require("../middlewares/authMiddleware");
+// Route pour ajouter un utilisateur avec image upload
+router.post("/add", upload.single("image"), userAdd);
+// Route pour uploader une image séparément
+router.post("/imageUpload", upload.single("image"), uploadImage);
+// Route pour récupérer le profil de l'utilisateur
+router.post('/profile', authenticateToken, getUserProfile);
 // Middleware d'authentification
 const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
@@ -16,27 +24,37 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-// Route pour ajouter un utilisateur avec image upload
-router.post("/add", upload.single("image"), userAdd);
+// 🚀 **Correction du login**
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: "Email et mot de passe requis" });
 
-// Route pour récupérer tous les utilisateurs (protégée)
-router.get("/all", verifyToken, getUsers);
+  try {
+    // Vérifier si l'utilisateur existe
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ message: "Utilisateur non trouvé" });
 
-// Route pour le login
-router.post("/login", (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ message: "Nom d'utilisateur requis" });
+    // Vérifier si le mot de passe est correct
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ message: "Mot de passe incorrect" });
 
-  const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    // Générer le token
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: false, // Mettre true en production avec HTTPS
-    sameSite: "Strict",
-    maxAge: 60 * 60 * 1000, // 1 heure
-  });
+    // Stocker le token dans les cookies
+    res.cookie("token", token, {
+      httpOnly: false, // Permet d'accéder au cookie côté client
+      secure: false, // Mettre true en production avec HTTPS
+      sameSite: "Lax",
+      maxAge: 60 * 60 * 1000, // 1 heure
+    });
 
-  res.json({ message: "Connexion réussie !" });
+    // Retourner le token et les infos utilisateur
+    res.json({ message: "Connexion réussie !", token, user: { id: user._id, email: user.email } });
+  } catch (error) {
+    console.error("Erreur lors de la connexion :", error);
+    res.status(500).json({ message: "Erreur interne du serveur" });
+  }
 });
 
 // Route pour la déconnexion
@@ -52,8 +70,5 @@ router.get("/me", verifyToken, (req, res) => {
 
 // Route pour la réinitialisation du mot de passe
 router.post("/forgetPass", forgetPass);
-
-// Route pour uploader une image séparément
-router.post("/imageUpload", upload.single("image"), uploadImage);
 
 module.exports = router;

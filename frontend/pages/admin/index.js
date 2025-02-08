@@ -1,18 +1,44 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import axios from "axios";
 import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 
 export default function Login() {
   const [email, setEmail] = useState(""); // Initialisation de l'état email
   const [password, setPassword] = useState(""); // Initialisation de l'état mot de passe
   const router = useRouter();
 
-  const handleLogin = () => {
-    // Vérification des identifiants
-    if (email === "admin@gmail.com" && password === "admin") {
-      router.push("/admin/home"); // Redirection vers la page d'accueil admin
-    } else {
-      toast.error("Incorrect credentials!"); // Message d'erreur si les identifiants sont incorrects
+  const handleLogin = async () => {
+    try {
+      // Envoi des informations de connexion à l'API pour l'authentification
+      const response = await axios.post("http://localhost:8080/api/admin/login", {
+        email,
+        password,
+      });
+
+      // Vérification si la connexion est réussie
+      if (response.data.success) {
+        // Stockage du token admin dans les cookies
+        Cookies.set("adminToken", response.data.adminToken); // Utilisation de adminToken renvoyé par le backend
+
+        // Afficher un message de succès
+        toast.success("Connexion réussie !");
+
+        // Vérifiez si le token admin est présent et redirigez vers la page d'accueil de l'admin
+        const adminToken = Cookies.get("adminToken");
+        console.log("adminToken après connexion : ", adminToken);  // Vérification du cookie
+
+        if (adminToken) {
+          router.push("/admin/home");  // Rediriger vers la page d'accueil admin
+        }
+      } else {
+        // Si l'authentification échoue, afficher un message d'erreur
+        toast.error("Identifiants incorrects !");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la connexion : ", error);
+      toast.error("Erreur lors de la connexion, veuillez réessayer.");
     }
   };
 
@@ -22,7 +48,7 @@ export default function Login() {
         className="bg-white p-8 rounded shadow-md w-full max-w-md 
                   hover:scale-105 transition-transform duration-300"
       >
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800 ">
+        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
           Admin Login
         </h1>
         <div className="mb-4">
@@ -32,30 +58,30 @@ export default function Login() {
           <input
             type="email"
             id="email"
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Your Email"
+            placeholder="Votre Email"
           />
         </div>
         <div className="mb-6">
           <label htmlFor="password" className="block text-sm font-medium mb-1">
-            Password
+            Mot de passe
           </label>
           <input
             type="password"
             id="password"
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Your password"
+            placeholder="Votre mot de passe"
           />
         </div>
         <button
           onClick={handleLogin}
           className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition"
         >
-          Login
+          Connexion
         </button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
 function Headerh() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -11,22 +12,36 @@ function Headerh() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const storedUser = localStorage.getItem("user");
-      
-      if (storedUser) {
-        const user = JSON.parse(storedUser);
+      const token = Cookies.get("token");
+      console.log("🔍 Token récupéré depuis les cookies :", token);
+
+      if (token) {
         setIsLoggedIn(true);
+        console.log("✅ L'utilisateur est connecté.");
 
         try {
-          const response = await axios.post("http://localhost:8080/api/users/profile", { userId: user.id });
+          const response = await axios.post(
+            "http://localhost:8080/api/users/profile", 
+            {}, // Corps vide de la requête, car l'ID utilisateur est dans le token
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+
+          console.log("📡 Réponse de l'API profile :", response.data);
+
           if (response.data && response.data.user) {
+            console.log("👤 Utilisateur trouvé :", response.data.user);
             setUserImage(response.data.user.image);
+          } else {
+            console.log("⚠️ Aucun utilisateur trouvé.");
           }
         } catch (error) {
-          console.error("Erreur lors de la récupération du profil utilisateur :", error);
+          console.error("❌ Erreur lors de la récupération du profil utilisateur :", error);
         }
       } else {
         setIsLoggedIn(false);
+        console.log("❌ Aucun token trouvé, utilisateur déconnecté.");
       }
     };
 
@@ -45,9 +60,11 @@ function Headerh() {
   }, []);
 
   const handleLogoutClick = () => {
+    console.log("🚪 Déconnexion en cours...");
+    Cookies.remove("token"); // Supprimer le token du cookie
     setIsLoggedIn(false);
-    localStorage.removeItem("user"); 
-    router.push('/');
+    console.log("✅ Déconnecté avec succès.");
+    router.push('/'); // Rediriger vers la page de connexion
   };
 
   const handleScrollToFooter = (event) => {

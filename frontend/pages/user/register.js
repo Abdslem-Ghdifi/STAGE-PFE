@@ -57,7 +57,7 @@ const Register = () => {
 
       if (response.status === 201) {
         toast.success("Account created successfully!");
-        router.push("/user/Login");
+        router.push("/user/login");
       }
     } catch (error) {
       toast.error("An error occurred. Please try again.");

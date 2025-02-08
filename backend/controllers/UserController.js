@@ -172,15 +172,22 @@ const uploadImage = async (req, res) => {
     });
   }
 };
+
+
+
+
 const getUserProfile = async (req, res) => {
   try {
-    const { userId } = req.body; // Récupérer l'ID de l'utilisateur depuis le corps de la requête
-    console.log("user id en backend ",userId);
+    const userId = req.user.id; // L'ID de l'utilisateur est maintenant disponible grâce au middleware
+
+    // Chercher l'utilisateur dans la base de données
     const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({ success: false, message: "Utilisateur non trouvé." });
     }
 
+    // Retourner les informations de l'utilisateur
     res.status(200).json({
       success: true,
       user: {
@@ -194,7 +201,7 @@ const getUserProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Erreur : ", error);
     res.status(500).json({
       success: false,
       message: "Erreur lors de la récupération du profil utilisateur.",
@@ -202,6 +209,7 @@ const getUserProfile = async (req, res) => {
     });
   }
 };
+
 
 
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
+import Cookies from "js-cookie"; // Importer js-cookie pour stocker le token
 import Header from "./components/header";
 import Footer from "./components/footer";
 
@@ -22,13 +23,24 @@ export default function Login() {
       const response = await axios.post(
         "http://localhost:8080/api/users/login",
         { email, password },
-        { withCredentials: true } // Permet d'envoyer les cookies
+        { withCredentials: true } // Si le backend envoie un cookie, garde ceci
       );
 
-      if (response.status === 200) {
-        router.push("/dashboard"); // Redirige vers le tableau de bord après connexion
+      console.log("📡 Réponse de l'API login :", response.data);
+
+      if (response.status === 200 && response.data.token) {
+        console.log("✅ Token reçu :", response.data.token);
+        
+        // Stocker le token dans un cookie
+        Cookies.set("token", response.data.token, { expires: 7 }); // Expire en 7 jours
+
+        router.push("./accueil"); // Redirige vers la page d'accueil
+      } else {
+        console.log("❌ Aucun token reçu.");
+        setError("Authentification échouée, veuillez réessayer.");
       }
     } catch (err) {
+      console.error("❌ Erreur de connexion :", err);
       setError(err.response?.data?.message || "Erreur de connexion");
     }
   };
