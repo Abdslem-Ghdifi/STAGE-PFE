@@ -1,27 +1,36 @@
+// server.js (Mise à jour avec JWT et cookies)
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const colors = require("colors");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
 const QuestionRoute = require("./routes/QuestionRoute.js");
-const userRoute = require("./routes/userRoute.js")
-const demandeRoute = require('./routes/demandeRoute');
-const contactRoute =require ("./routes/contactRoute");
+const userRoute = require("./routes/userRoute.js");
+const demandeRoute = require("./routes/demandeRoute");
+const contactRoute = require("./routes/contactRoute");
+
 dotenv.config();
 const app = express();
 
 // Middleware
 app.use(morgan("dev"));
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Assure-toi que l'URL correspond à ton frontend
+    credentials: true,
+  })
+);
 
 // Routes
-app.use("/api/question", QuestionRoute); 
-app.use("/api/users",userRoute);
-app.use("/api/contact",contactRoute);
-// Utiliser les routes
-app.use('/api/demandes', demandeRoute);
+app.use("/api/question", QuestionRoute);
+app.use("/api/users", userRoute);
+app.use("/api/contact", contactRoute);
+app.use("/api/demandes", demandeRoute);
+
 // Test route
 app.get("/", (req, res) => {
   res.send("API Running...");

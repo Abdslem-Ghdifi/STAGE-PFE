@@ -13,33 +13,23 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Valider l'email et mot de passe
     if (!email || !password) {
       setError("Veuillez remplir tous les champs");
       return;
     }
 
     try {
-      // Appel à l'API pour authentifier l'utilisateur avec Axios
-      const response = await axios.post("http://localhost:8080/api/users/login", { email, password });
+      const response = await axios.post(
+        "http://localhost:8080/api/users/login",
+        { email, password },
+        { withCredentials: true } // Permet d'envoyer les cookies
+      );
 
       if (response.status === 200) {
-        // Enregistrer l'utilisateur et le token dans localStorage
-        const { user, token } = response.data;
-        console.log("user : ", user);
-        localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("token", token); // Stocker le token JWT
-
-        // Rediriger vers la page d'accueil ou une autre page protégée
-        router.push("./accueil");
+        router.push("/dashboard"); // Redirige vers le tableau de bord après connexion
       }
     } catch (err) {
-      // Si une erreur survient
-      if (err.response) {
-        setError(err.response.data.message || "Erreur de connexion");
-      } else {
-        setError("Erreur du serveur");
-      }
+      setError(err.response?.data?.message || "Erreur de connexion");
     }
   };
 
@@ -56,7 +46,6 @@ export default function Login() {
             <div className="mb-4">
               <input
                 type="email"
-                id="email"
                 placeholder="Email"
                 className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 value={email}
@@ -68,7 +57,6 @@ export default function Login() {
             <div className="mb-6">
               <input
                 type="password"
-                id="password"
                 placeholder="Mot de passe"
                 className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 value={password}
