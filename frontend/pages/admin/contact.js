@@ -15,10 +15,13 @@ export default function AdminContact() {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/api/contact/messages");
+        const response = await axios.get("http://localhost:8080/api/contact/messages", {
+          withCredentials: true, // Envoi des cookies pour l'authentification
+        });
         setMessages(response.data);
       } catch (error) {
         console.error("Erreur lors de la récupération des messages", error);
+        toast.error("Erreur lors de la récupération des messages.");
       }
     };
 
@@ -36,12 +39,14 @@ export default function AdminContact() {
         email: selectedMessage.email,
         responseMessage,
         messageId: selectedMessage._id,
+      }, {
+        withCredentials: true, // Envoi des cookies pour l'authentification
       });
 
       if (response.status === 200) {
         toast.success("Réponse envoyée avec succès !");
-        setResponseMessage(""); // Reset du champ de réponse
-        setSelectedMessage(null); // Reset de la sélection
+        setResponseMessage(""); // Réinitialiser le champ de réponse
+        setSelectedMessage(null); // Réinitialiser la sélection du message
       }
     } catch (error) {
       console.error("Erreur lors de l'envoi de la réponse", error);
@@ -58,7 +63,10 @@ export default function AdminContact() {
         <div className="space-y-4">
           {messages.map((msg) => (
             <div key={msg._id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="p-6 cursor-pointer" onClick={() => setSelectedMessage(selectedMessage === msg ? null : msg)}>
+              <div
+                className="p-6 cursor-pointer"
+                onClick={() => setSelectedMessage(selectedMessage === msg ? null : msg)}
+              >
                 <div className="flex justify-between items-center">
                   <div>
                     <h3 className="text-xl font-semibold text-blue-600">{msg.name}</h3>

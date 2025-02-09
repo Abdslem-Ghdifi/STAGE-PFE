@@ -10,7 +10,10 @@ export default function Admin() {
   useEffect(() => {
     const fetchDemandes = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/demandes/demandes');
+        // Requête GET avec envoi des cookies pour l'authentification
+        const response = await axios.get('http://localhost:8080/api/demandes/demandes', {
+          withCredentials: true,  // Envoie les cookies pour l'authentification
+        });
         // Filtrer uniquement les demandes avec le statut 'pending'
         const filteredDemandes = response.data.filter(demande => demande.status === 'pending');
         setPendingDemandes(filteredDemandes);
@@ -23,7 +26,11 @@ export default function Admin() {
 
   const handleRespond = async (id, action) => {
     try {
-      await axios.patch(`http://localhost:8080/api/demandes/demande/${id}`, { action });
+      // Requête PATCH avec envoi des cookies pour l'authentification
+      await axios.patch(`http://localhost:8080/api/demandes/demande/${id}`, { action }, {
+        withCredentials: true,  // Envoie les cookies pour l'authentification
+      });
+      // Mettre à jour l'état en supprimant la demande traitée
       setPendingDemandes(pendingDemandes.filter((demande) => demande._id !== id));
       toast.success(`Demande ${action === 'accept' ? 'acceptée' : 'refusée'}.`);
     } catch (error) {
