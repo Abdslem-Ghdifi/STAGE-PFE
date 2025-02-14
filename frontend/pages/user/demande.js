@@ -30,10 +30,10 @@ export default function Demande() {
   return (
     <div>
       <Header />
-      <div className="flex justify-center items-center min-h-screen bg-gray-100 py-10">
-        <div className="w-full max-w-3xl bg-white p-6 rounded-lg shadow-lg">
+      <div className="flex justify-center items-center min-h-screen  py-6">
+        <div className="w-full h-full max-w-3xl max-h-3xl bg-gray-100 p-8 rounded-lg shadow-lg">
           <h1 className="text-2xl font-bold mb-4 text-center">Créer une Demande pour faire l'inscription</h1>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <input
               type="text"
               name="nom"

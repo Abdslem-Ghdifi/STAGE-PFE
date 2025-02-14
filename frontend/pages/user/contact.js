@@ -45,8 +45,8 @@ export default function Contact() {
   return (
     <div className="font-sans">
       <Header />
-      <div className="flex justify-center items-start min-h-screen bg-gray-100 py-10">
-        <div className="flex w-full max-w-7xl bg-white p-6 rounded-lg shadow-lg">
+      <div className="flex justify-center items-start min-h-screen  py-10">
+        <div className="flex w-full max-w-7xl bg-gray-100 p-6 rounded-lg shadow-lg">
           {/* Informations de contact à gauche */}
           <div className="w-full md:w-1/2 px-6">
             <h3 className="text-xl font-semibold mb-4 text-blue-600">Contactez-nous</h3>

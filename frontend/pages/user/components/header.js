@@ -33,7 +33,7 @@ function Header() {
           <img
             src="/images/logo.png"
             alt="Logo ScreenLearning"
-            width={isScrolled ? 120 : 200}
+            width={isScrolled ? 120 : 150}
             height={isScrolled ? 40 : 75}
             className="transition-all duration-300"
           />
@@ -70,9 +70,6 @@ function Header() {
         <div className="flex space-x-4">
           <Link href="/user/login" className="text-blue-500 font-bold">
             Connexion
-          </Link>
-          <Link href="/user/demande" className="text-green-500 font-bold">
-            Inscription
           </Link>
         </div>
       </div>

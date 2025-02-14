@@ -22,18 +22,19 @@ export default function Vidimg() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto mt-10 pb-10">
-      <div className="relative w-full h-[600px]"> 
+    <div className="relative w-full max-w-4xl mx-auto mt-10 pb-10">
+      <div className="relative w-full h-[1000px]">
         <Image
           src="/images/imgreel.jpg"
           alt="Thumbnail"
-          layout="fill"
+          width={1200}   
+          height={800}   
           objectFit="cover"
           className="rounded-lg"
         />
       </div>
 
-      <div className="absolute top-[33.1%] left-[11%] -translate-y-1/2 z-10">
+      <div className="absolute top-[41.9%] left-[4%] -translate-y-1/2 z-10">
         <video
           ref={videoRef}
           src="/images/vidreel.mp4"
@@ -41,7 +42,7 @@ export default function Vidimg() {
           loop
           playsInline
           muted
-          className="w-[600px] h-[650px] rounded-lg" 
+          className="w-[830px] h-[830px] rounded-lg"
         />
       </div>
     </div>

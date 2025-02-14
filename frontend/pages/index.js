@@ -9,7 +9,6 @@ export default function HomePage() {
   return (
     <div>
       <Header />
-      <Message/>
       <Vidimg/>
       <ImageSlider/>
       <CourseCard/>

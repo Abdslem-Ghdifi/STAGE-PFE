@@ -46,16 +46,16 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="h-screen flex flex-col ">
       <Header />
-      <div className="flex justify-center items-center flex-1">
-        <div className="w-full max-w-md bg-transparent p-8 rounded-lg shadow-lg border border-gray-300">
+      <div className="flex justify-center items-center flex-1 px-4 py-6">
+        <div className="w-full max-w-md bg-transparent p-20 rounded-lg shadow-lg border border-gray-300">
           <h2 className="text-2xl font-semibold text-center mb-6">Connexion</h2>
 
           {error && <div className="text-red-500 mb-4">{error}</div>}
 
           <form onSubmit={handleLogin}>
-            <div className="mb-4">
+            <div className="mb-6">
               <input
                 type="email"
                 placeholder="Email"
@@ -84,6 +84,17 @@ export default function Login() {
               Se connecter
             </button>
           </form>
+
+          {/* Texte avant le lien S'inscrire */}
+          <div className="mt-4 text-center">
+            <span className="text-sm">Si vous n'avez pas de compte, </span>
+            <span
+              className="text-sm text-green-500 hover:underline cursor-pointer"
+              onClick={() => router.push("/user/demande")}
+            >
+              S'inscrire
+            </span>
+          </div>
         </div>
       </div>
       <Footer />

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const Admin = require('../models/AdminModel');
+
 const cookieParser = require("cookie-parser");
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1]; // Extraire le token (Bearer token)

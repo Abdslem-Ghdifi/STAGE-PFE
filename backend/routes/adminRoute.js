@@ -1,5 +1,5 @@
 const express = require("express");
-const { loginAdmin, logoutAdmin } = require("../controllers/adminController");
+const { loginAdmin, logoutAdmin } = require("../controllers/AdminController");
 const authenticateTokenAdmin= require("../middlewares/authenticateTokenAdmin");
 const {getUsers} = require('../controllers/UserController')
 
