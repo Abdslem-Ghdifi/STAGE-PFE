@@ -1,10 +1,10 @@
 const express = require("express");
-const { loginAdmin, logoutAdmin } = require("../controllers/AdminController");
+const { loginAdmin, logoutAdmin ,createAdmin } = require("../controllers/AdminController");
 const authenticateTokenAdmin= require("../middlewares/authenticateTokenAdmin");
 const {getUsers} = require('../controllers/UserController')
 
 const router = express.Router();
-
+router.post("/create",createAdmin)
 // Route de connexion (login)
 router.post("/login", loginAdmin);
 
