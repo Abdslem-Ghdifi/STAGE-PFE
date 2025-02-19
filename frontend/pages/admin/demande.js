@@ -1,94 +1,124 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { toast } from 'react-toastify';
-import Header from './components/header';
-import Footer from './components/footer';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Header from "./components/header";
+import Footer from "./components/footer";
 
-export default function Admin() {
-  const [pendingDemandes, setPendingDemandes] = useState([]);
+const FormateursPage = () => {
+  const [formateurs, setFormateurs] = useState([]);
 
-  useEffect(() => {
-    const fetchDemandes = async () => {
-      try {
-        // Requête GET avec envoi des cookies pour l'authentification
-        const response = await axios.get('http://localhost:8080/api/demandes/demandes', {
-          withCredentials: true,  // Envoie les cookies pour l'authentification
-        });
-        // Filtrer uniquement les demandes avec le statut 'pending'
-        const filteredDemandes = response.data.filter(demande => demande.status === 'pending');
-        setPendingDemandes(filteredDemandes);
-      } catch (error) {
-        toast.error('Erreur lors de la récupération des demandes.');
-      }
-    };
-    fetchDemandes();
-  }, []);
-
-  const handleRespond = async (id, action) => {
+  // Récupérer les formateurs
+  const fetchFormateurs = async () => {
     try {
-      // Requête PATCH avec envoi des cookies pour l'authentification
-      await axios.patch(`http://localhost:8080/api/demandes/demande/${id}`, { action }, {
-        withCredentials: true,  // Envoie les cookies pour l'authentification
+      const response = await axios.get("http://localhost:8080/api/formateur/getFormateurs", {
+        withCredentials: true, // Inclure les cookies dans la requête
       });
-      // Mettre à jour l'état en supprimant la demande traitée
-      setPendingDemandes(pendingDemandes.filter((demande) => demande._id !== id));
-      toast.success(`Demande ${action === 'accept' ? 'acceptée' : 'refusée'}.`);
+      setFormateurs(response.data.formateurs);
     } catch (error) {
-      toast.error('Erreur lors de l\'action sur la demande.');
+      console.error("Erreur lors de la récupération des formateurs:", error);
+      toast.error("Erreur lors de la récupération des formateurs.");
     }
   };
 
+  // Activer un formateur
+  const handleActiver = async (formateurId) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/formateur/activer",
+        { formateurId },
+        { withCredentials: true }
+      );
+      toast.success(response.data.message);
+      fetchFormateurs(); // Récupérer à nouveau les formateurs
+    } catch (error) {
+      console.error("Erreur lors de l'activation du formateur:", error);
+      toast.error("Erreur lors de l'activation du formateur.");
+    }
+  };
+
+  // Refuser un formateur
+  const handleRefuser = async (formateurId) => {
+    // Implémenter la logique pour refuser le formateur (par exemple, mettre à jour l'état de son compte)
+    toast.info("Le formateur a été refusé.");
+  };
+
+  useEffect(() => {
+    fetchFormateurs();
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-screen bg-blue-50">
-      {/* Header en haut */}
+    <div>
       <Header />
-      
-      {/* Contenu principal */}
-      <main className="flex-grow flex flex-col items-center py-6">
-        <h1 className="text-2xl font-bold mb-4">Gestion des Demandes</h1>
-        <div className="w-full max-w-4xl bg-white shadow-md rounded-lg p-4">
-          {pendingDemandes.length > 0 ? (
-            <table className="table-auto w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="p-2">Nom</th>
-                  <th className="p-2">Prénom</th>
-                  <th className="p-2">Email</th>
-                  <th className="p-2">Action</th>
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-semibold mb-6">Liste des Formateurs</h1>
+        <div className="overflow-x-auto bg-white shadow-md rounded-lg">
+          <table className="min-w-full table-auto">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Image</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Nom</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Email</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Profession</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Expérience</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Adresse</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Numéro de téléphone</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Statut</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Action</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm text-gray-600">
+              {formateurs.map((formateur) => (
+                <tr key={formateur._id} className="border-b hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <img
+                      src={formateur.image || "https://via.placeholder.com/50"}
+                      alt={formateur.nom}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  </td>
+                  <td className="px-6 py-4">{formateur.nom} {formateur.prenom}</td>
+                  <td className="px-6 py-4">{formateur.email}</td>
+                  <td className="px-6 py-4">{formateur.profession}</td>
+                  <td className="px-6 py-4">{formateur.experience} ans</td>
+                  <td className="px-6 py-4">{formateur.adresse}</td>
+                  <td className="px-6 py-4">{formateur.numTel}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        formateur.activer ? "bg-green-500 text-white" : "bg-yellow-500 text-black"
+                      }`}
+                    >
+                      {formateur.activer ? "Activé" : "En attente"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {!formateur.activer && (
+                      <div className="space-x-2">
+                        <button
+                          onClick={() => handleActiver(formateur._id)}
+                          className="bg-green-500 text-white px-4 py-2 rounded-md"
+                        >
+                          Accepter
+                        </button>
+                        <button
+                          onClick={() => handleRefuser(formateur._id)}
+                          className="bg-red-500 text-white px-4 py-2 rounded-md"
+                        >
+                          Refuser
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {pendingDemandes.map((demande) => (
-                  <tr key={demande._id} className="border-b">
-                    <td className="p-2">{demande.nom}</td>
-                    <td className="p-2">{demande.prenom}</td>
-                    <td className="p-2">{demande.email}</td>
-                    <td className="p-2">
-                      <button
-                        className="bg-green-500 text-white py-1 px-3 rounded mr-2"
-                        onClick={() => handleRespond(demande._id, 'accept')}
-                      >
-                        Accepter
-                      </button>
-                      <button
-                        className="bg-red-500 text-white py-1 px-3 rounded"
-                        onClick={() => handleRespond(demande._id, 'refuse')}
-                      >
-                        Refuser
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="text-center text-gray-700">Aucune demande en attente.</p>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
-      </main>
-      
-      {/* Footer en bas */}
+      </div>
       <Footer />
     </div>
   );
-}
+};
+
+export default FormateursPage;

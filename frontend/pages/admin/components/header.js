@@ -4,8 +4,8 @@ import Link from "next/link";
 import Cookies from "js-cookie"; // Importer js-cookie pour gérer le token
 
 const Header = () => {
-  const [demandesCount, setDemandesCount] = useState(0);
   const [messagesCount, setMessagesCount] = useState(0);
+  const [formateursCount, setFormateursCount] = useState(0); // Nouveau state pour le compte des formateurs
   const [admin, setAdmin] = useState(null);
 
   useEffect(() => {
@@ -23,18 +23,6 @@ const Header = () => {
       }
     };
 
-    const fetchDemandes = async () => {
-      try {
-        const response = await axios.get("http://localhost:8080/api/demandes/demandes", {
-          withCredentials: true,
-        });
-        const pendingDemandes = response.data.filter((demande) => demande.status === "pending");
-        setDemandesCount(pendingDemandes.length);
-      } catch (error) {
-        console.error("Erreur lors de la récupération des demandes :", error);
-      }
-    };
-
     const fetchMessages = async () => {
       try {
         const response = await axios.get("http://localhost:8080/api/contact/messages", {
@@ -46,9 +34,27 @@ const Header = () => {
       }
     };
 
+    const fetchFormateurs = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/formateur/getFormateurs", {
+          withCredentials: true,
+        });
+
+        // Vérifier si la réponse est un tableau
+        if (Array.isArray(response.data)) {
+          const formateursEnAttente = response.data.filter((formateur) => !formateur.activer);
+          setFormateursCount(formateursEnAttente.length);
+        } else {
+          console.error("Les données récupérées ne sont pas un tableau :", response.data);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des formateurs :", error);
+      }
+    };
+
     fetchAdminProfile();
-    fetchDemandes();
     fetchMessages();
+    fetchFormateurs();
   }, []);
 
   const handleLogout = async () => {
@@ -84,13 +90,13 @@ const Header = () => {
           </div>
         </Link>
 
-        {/* Demandes */}
+        {/* Formateurs */}
         <Link href="/admin/demande">
           <div className="relative cursor-pointer hover:text-blue-300 transition duration-300 flex items-center space-x-2">
-            <span className="text-white font-medium">Demandes</span>
-            {demandesCount > 0 && (
+            <span className="text-white font-medium">Formateurs</span>
+            {formateursCount > 0 && (
               <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                {demandesCount}
+                {formateursCount}
               </span>
             )}
           </div>

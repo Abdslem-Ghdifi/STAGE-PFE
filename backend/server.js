@@ -11,6 +11,7 @@ const userRoute = require("./routes/userRoute.js");
 const demandeRoute = require("./routes/demandeRoute");
 const contactRoute = require("./routes/contactRoute");
 const adminRoute = require('./routes/adminRoute');
+const formateurRoute = require('./routes/formateurRouter')
 dotenv.config();
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/users", userRoute);
 app.use("/api/admin", adminRoute);
 app.use("/api/contact", contactRoute);
 app.use("/api/demandes", demandeRoute);
+app.use("/api/formateur",formateurRoute)
 
 // Test route
 app.get("/", (req, res) => {

@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/AdminModel");
 const dotenv = require("dotenv");
-dotenv.config(); // Charger les variables d'environnement
+dotenv.config(); 
 
 // Fonction de connexion (login)
 const loginAdmin = async (req, res) => {
