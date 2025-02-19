@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../user/components/header";
-
-
+import Header from "./components/header";
+import Footer from "./components/footer";
 
 const AjouterExpert = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +16,7 @@ const AjouterExpert = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Gestion des inputs
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -26,10 +26,12 @@ const AjouterExpert = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };
 
+  // Gestion du fichier image
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
+  // Validation du formulaire
   const validateForm = () => {
     const newErrors = {};
     const emailRegex = /^\S+@\S+\.\S+$/;
@@ -45,6 +47,7 @@ const AjouterExpert = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Upload de l'image sur le serveur
   const uploadImage = async () => {
     if (!file) return null;
 
@@ -64,6 +67,7 @@ const AjouterExpert = () => {
     }
   };
 
+  // Soumission du formulaire
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -81,7 +85,9 @@ const AjouterExpert = () => {
         headers: { "Content-Type": "application/json" },
         withCredentials: true,
       });
-      toast.success("Expert ajouté avec succès.");
+
+      toast.success("Expert ajouté avec succès !", { position: "top-right" });
+
       setFormData({ nom: "", prenom: "", email: "", motDePasse: "" });
       setFile(null);
     } catch (error) {
@@ -94,6 +100,7 @@ const AjouterExpert = () => {
   return (
     <div>
       <Header />
+      <ToastContainer position="top-right" autoClose={3000}/>
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
           <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Ajouter un Expert</h2>
@@ -128,6 +135,7 @@ const AjouterExpert = () => {
           </form>
         </div>
       </div>
+      <Footer/>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import Footer from "./components/footer";
 
 const FormateursPage = () => {
   const [formateurs, setFormateurs] = useState([]);
+  const [searchQuery, setSearchQuery] = useState(""); // État pour la recherche
 
   // Récupérer les formateurs
   const fetchFormateurs = async () => {
@@ -20,6 +21,19 @@ const FormateursPage = () => {
       toast.error("Erreur lors de la récupération des formateurs.");
     }
   };
+
+  // Filtrer les formateurs en fonction de la recherche
+  const filteredFormateurs = formateurs.filter((formateur) => {
+    return (
+      formateur.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      formateur.prenom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      formateur.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      formateur.profession.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      formateur.experience.toString().includes(searchQuery) || // Convertir l'expérience en chaîne de caractères pour la recherche
+      formateur.adresse.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      formateur.numTel.includes(searchQuery)
+    );
+  });
 
   // Activer un formateur
   const handleActiver = async (formateurId) => {
@@ -52,6 +66,18 @@ const FormateursPage = () => {
       <Header />
       <div className="container mx-auto p-6">
         <h1 className="text-3xl font-semibold mb-6">Liste des Formateurs</h1>
+
+        {/* Barre de recherche */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Rechercher un formateur..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} // Mettre à jour la valeur de recherche
+            className="w-full p-2 border border-gray-300 rounded-lg"
+          />
+        </div>
+
         <div className="overflow-x-auto bg-white shadow-md rounded-lg">
           <table className="min-w-full table-auto">
             <thead className="bg-gray-200">
@@ -68,7 +94,7 @@ const FormateursPage = () => {
               </tr>
             </thead>
             <tbody className="text-sm text-gray-600">
-              {formateurs.map((formateur) => (
+              {filteredFormateurs.map((formateur) => (
                 <tr key={formateur._id} className="border-b hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <img

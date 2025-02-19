@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
-import Cookies from "js-cookie"; // Importer js-cookie pour gérer le token
+import Cookies from "js-cookie";
 
 const Header = () => {
   const [messagesCount, setMessagesCount] = useState(0);
-  const [formateursCount, setFormateursCount] = useState(0); // Nouveau state pour le compte des formateurs
+  const [formateursCount, setFormateursCount] = useState(0);
   const [admin, setAdmin] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchAdminProfile = async () => {
@@ -17,7 +18,7 @@ const Header = () => {
         setAdmin(response.data.admin);
       } catch (error) {
         console.error("Erreur lors de la récupération du profil admin :", error);
-        if (error.response && error.response.status === 401) {
+        if (error.response?.status === 401) {
           window.location.href = "/admin";
         }
       }
@@ -39,13 +40,9 @@ const Header = () => {
         const response = await axios.get("http://localhost:8080/api/formateur/getFormateurs", {
           withCredentials: true,
         });
-
-        // Vérifier si la réponse est un tableau
         if (Array.isArray(response.data)) {
           const formateursEnAttente = response.data.filter((formateur) => !formateur.activer);
           setFormateursCount(formateursEnAttente.length);
-        } else {
-          console.error("Les données récupérées ne sont pas un tableau :", response.data);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des formateurs :", error);
@@ -68,67 +65,54 @@ const Header = () => {
   };
 
   if (!admin) {
-    return <p>Chargement du profil...</p>;
+    return <p className="text-center mt-4 text-gray-600">Chargement du profil...</p>;
   }
 
   return (
     <header className="bg-blue-600 text-white py-4 px-6 flex justify-between items-center shadow-md">
       {/* Logo */}
-      <div className="flex items-center space-x-3">
-        <h1 className="text-3xl font-semibold text-white hover:text-blue-300 transition duration-300">
-          Screen Learning
-        </h1>
-      </div>
+      <h1 className="text-2xl font-semibold hover:text-blue-300 transition duration-300">
+        Screen Learning
+      </h1>
 
       {/* Navigation */}
-      <div className="flex items-center space-x-8">
-        {/* Lien vers la page des utilisateurs */}
-        <Link href="/admin/users">
-          <div className="relative cursor-pointer hover:text-blue-300 transition duration-300 flex items-center space-x-2">
-            <span className="text-white font-medium">Utilisateurs</span>
-            <span className="absolute left-0 bottom-0 w-full h-[2px] bg-blue-300 scale-x-0 transition-all duration-300 group-hover:scale-x-100"></span>
-          </div>
-        </Link>
-
-        {/* Formateurs */}
-        <Link href="/admin/demande">
-          <div className="relative cursor-pointer hover:text-blue-300 transition duration-300 flex items-center space-x-2">
-            <span className="text-white font-medium">Formateurs</span>
-            {formateursCount > 0 && (
-              <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                {formateursCount}
-              </span>
-            )}
-          </div>
-        </Link>
+      <div className="flex items-center space-x-6">
+        {/* Utilisateurs avec menu déroulant */}
+        <div className="relative">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center space-x-2 hover:text-blue-300 transition duration-300"
+          >
+            <span className="font-medium">Utilisateurs</span>
+            <svg className="w-4 h-4 transition-transform duration-300" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          {dropdownOpen && (
+            <div className="absolute left-0 mt-2 w-40 bg-white text-gray-800 shadow-lg rounded-md z-50">
+              <Link href="/admin/users" className="block px-4 py-2 hover:bg-gray-100">Apprenant</Link>
+              <Link href="/admin/demande" className="block px-4 py-2 hover:bg-gray-100">Formateurs</Link>
+              <Link href="/admin/expertlist" className="block px-4 py-2 hover:bg-gray-100">Experts</Link>
+            </div>
+          )}
+        </div>
 
         {/* Messages */}
-        <Link href="/admin/contact">
-          <div className="relative cursor-pointer hover:text-blue-300 transition duration-300 flex items-center space-x-2">
-            <span className="text-white font-medium">Messages</span>
-            {messagesCount > 0 && (
-              <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                {messagesCount}
-              </span>
-            )}
-          </div>
+        <Link href="/admin/contact" className="relative hover:text-blue-300 transition duration-300">
+          <span className="font-medium">Messages</span>
+          {messagesCount > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">{messagesCount}</span>
+          )}
         </Link>
 
         {/* Profil Admin */}
         <div className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition duration-300">
-          <img
-            src={admin.image || "/images/admin.png"}
-            alt="Admin Avatar"
-            className="h-8 w-8 rounded-full border-2 border-gray-300"
-          />
-          <span className="text-white font-medium">{`${admin.nom} ${admin.prenom}`}</span>
+          <img src={admin.image || "/images/admin.png"} alt="Admin Avatar" className="h-8 w-8 rounded-full border-2 border-gray-300" />
+          <span className="font-medium">{`${admin.nom} ${admin.prenom}`}</span>
         </div>
 
         {/* Bouton de déconnexion */}
-        <button
-          onClick={handleLogout}
-          className="ml-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition duration-200"
-        >
+        <button onClick={handleLogout} className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition duration-200">
           Déconnexion
         </button>
       </div>

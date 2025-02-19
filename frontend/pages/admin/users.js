@@ -8,6 +8,7 @@ import Footer from "./components/footer";
 const UsersList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(""); // État pour la recherche
 
   // Récupérer la liste des utilisateurs au chargement de la page
   useEffect(() => {
@@ -29,6 +30,17 @@ const UsersList = () => {
     fetchUsers();
   }, []);
 
+  // Filtrer les utilisateurs en fonction de la recherche
+  const filteredUsers = users.filter((user) => {
+    return (
+      user.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.prenom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.adresse.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.telephone.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header fixé en haut */}
@@ -38,6 +50,17 @@ const UsersList = () => {
       <div className="flex-grow mt-16 mb-16">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-semibold text-center mb-6">Liste des Utilisateurs</h1>
+
+          {/* Barre de recherche */}
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Rechercher un utilisateur..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)} // Mettre à jour la valeur de recherche
+              className="w-full p-2 border border-gray-300 rounded-lg"
+            />
+          </div>
 
           {loading ? (
             <div className="text-center text-xl text-gray-500">Chargement des utilisateurs...</div>
@@ -55,7 +78,7 @@ const UsersList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <tr key={user.id} className="border-b hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-800">{user.nom}</td>
                       <td className="px-6 py-4 text-sm text-gray-800">{user.prenom}</td>

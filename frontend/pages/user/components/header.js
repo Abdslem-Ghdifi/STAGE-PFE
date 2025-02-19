@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 
 function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -22,6 +23,13 @@ function Header() {
     document.getElementById("footer")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleSearch = (event) => {
+    event.preventDefault();
+    if (searchQuery.trim() !== "") {
+      router.push(`/search?q=${searchQuery}`);
+    }
+  };
+
   return (
     <header
       className={`bg-white w-full z-50 transition-all duration-300 ${
@@ -34,18 +42,29 @@ function Header() {
             src="/images/logo.png"
             alt="Logo ScreenLearning"
             width={isScrolled ? 120 : 150}
-            height={isScrolled ? 40 : 75}
+            height={isScrolled ? 40 : 55}
             className="transition-all duration-300"
           />
         </Link>
 
-        <h1
-          className={`text-2xl font-bold text-blue-500 transition-all duration-300 ${
-            isScrolled ? "text-lg" : "text-2xl"
+        {/* Barre de recherche agrandie */}
+        <form
+          onSubmit={handleSearch}
+          className={`transition-all duration-300 flex items-center border border-gray-300 rounded-md overflow-hidden ${
+            isScrolled ? "w-50" : "w-[32rem]"
           }`}
         >
-          ScreenLearning
-        </h1>
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="px-3 py-2 w-full focus:outline-none"
+          />
+          <button type="submit" className="px-3">
+            🔍
+          </button>
+        </form>
 
         <nav>
           <ul className="flex space-x-6">
