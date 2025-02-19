@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { loginFormateur, addFormateur, getFormateurs, activerFormateur, upload, uploadImage } = require('../controllers/formateurController');
+const {  loginFormateur ,addFormateur, getFormateurs, activerFormateur, upload, uploadImage } = require('../controllers/formateurController');
 const authenticateTokenFormateur = require('../middlewares/formateurMid');
 const authenticateTokenAdmin= require("../middlewares/authenticateTokenAdmin");
 
 
 // Route pour ajouter un formateur (avec l'upload d'image)
-router.post('/ajouter', upload.single('image'), addFormateur);
+router.post('/ajouter',  addFormateur);
 
 // Route pour la connexion d'un formateur
 router.post('/login', loginFormateur);
@@ -21,8 +21,17 @@ router.post('/activer', authenticateTokenAdmin, activerFormateur);
 router.post('/upload', upload.single('image'), uploadImage);
 // Route pour retourner les information de doemateur 
 router.get("/profile", authenticateTokenFormateur, (req, res) => {
-    res.json({ success: true, message: "Accès autorisé", formateur: req.formateur });
-  });
-  
+  try {
+    // Récupérer le profil formateur depuis la base de données
+    const formateur = req.formateur; // Exemple : formateur extrait du token
+    if (!formateur) {
+      return res.status(404).json({ message: "Formateur non trouvé." });
+    }
+    res.json({ success: true, formateur });
+  } catch (error) {
+    console.error("Erreur interne du serveur", error);
+    res.status(500).json({ message: "Erreur interne du serveur." });
+  }
+});
 
 module.exports = router;

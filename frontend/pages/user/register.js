@@ -23,8 +23,8 @@ const Register = () => {
     const formData = new FormData();
     formData.append("image", file);
 
-    try {
-      const response = await axios.post("http://localhost:8080/api/users/imageUpload", formData, {
+      try {
+        const response = await axios.post("http://localhost:8080/api/users/imageUpload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return response.data.imageUrl;

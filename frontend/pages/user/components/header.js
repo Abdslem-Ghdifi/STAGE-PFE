@@ -68,7 +68,7 @@ function Header() {
         </nav>
 
         <div className="flex space-x-4">
-          <Link href="/user/login" className="text-blue-500 font-bold">
+          <Link href="/user/connexion" className="text-blue-500 font-bold">
             Connexion
           </Link>
         </div>

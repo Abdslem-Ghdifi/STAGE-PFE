@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../user/components/header";
+
+
 
 const AjouterExpert = () => {
   const [formData, setFormData] = useState({
@@ -40,11 +42,6 @@ const AjouterExpert = () => {
     else if (formData.motDePasse.length < 8) newErrors.motDePasse = "Le mot de passe doit contenir au moins 8 caractères.";
 
     setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length > 0) {
-      toast.error("Veuillez corriger les erreurs du formulaire.");
-    }
-
     return Object.keys(newErrors).length === 0;
   };
 
@@ -59,7 +56,6 @@ const AjouterExpert = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Image téléchargée avec succès !");
       return response.data?.imageUrl || null;
     } catch (error) {
       console.error("Échec de l'upload de l'image :", error);
@@ -85,7 +81,7 @@ const AjouterExpert = () => {
         headers: { "Content-Type": "application/json" },
         withCredentials: true,
       });
-      toast.success("Expert ajouté avec succès !");
+      toast.success("Expert ajouté avec succès.");
       setFormData({ nom: "", prenom: "", email: "", motDePasse: "" });
       setFile(null);
     } catch (error) {
@@ -98,7 +94,6 @@ const AjouterExpert = () => {
   return (
     <div>
       <Header />
-      <ToastContainer />
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
           <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Ajouter un Expert</h2>

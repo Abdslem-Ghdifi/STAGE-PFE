@@ -1,15 +1,19 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../user/components/header";
 
-const AjouterExpert = () => {
+const AjouterFormateur = () => {
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
     email: "",
     motDePasse: "",
+    adresse: "",
+    numTel: "",
+    profession: "",
+    experience: "",
   });
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,6 +35,7 @@ const AjouterExpert = () => {
   const validateForm = () => {
     const newErrors = {};
     const emailRegex = /^\S+@\S+\.\S+$/;
+    const phoneRegex = /^\d{10}$/;
 
     if (!formData.nom.trim()) newErrors.nom = "Le nom est obligatoire.";
     if (!formData.prenom.trim()) newErrors.prenom = "Le prénom est obligatoire.";
@@ -38,13 +43,13 @@ const AjouterExpert = () => {
     else if (!emailRegex.test(formData.email)) newErrors.email = "Veuillez entrer un email valide.";
     if (!formData.motDePasse.trim()) newErrors.motDePasse = "Le mot de passe est obligatoire.";
     else if (formData.motDePasse.length < 8) newErrors.motDePasse = "Le mot de passe doit contenir au moins 8 caractères.";
+    if (!formData.numTel.trim()) newErrors.numTel = "Le numéro de téléphone est obligatoire.";
+    else if (!phoneRegex.test(formData.numTel)) newErrors.numTel = "Le numéro de téléphone doit contenir 10 chiffres.";
+    if (!formData.adresse.trim()) newErrors.adresse = "L'adresse est obligatoire.";
+    if (!formData.profession.trim()) newErrors.profession = "La profession est obligatoire.";
+    if (!formData.experience.trim()) newErrors.experience = "L'expérience est obligatoire.";
 
     setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length > 0) {
-      toast.error("Veuillez corriger les erreurs du formulaire.");
-    }
-
     return Object.keys(newErrors).length === 0;
   };
 
@@ -55,15 +60,19 @@ const AjouterExpert = () => {
     imageData.append("image", file);
 
     try {
-      const response = await axios.post("http://localhost:8080/api/expert/upload", imageData, {
+      const response = await axios.post("http://localhost:8080/api/formateur/upload", imageData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Image téléchargée avec succès !");
-      return response.data?.imageUrl || null;
+      if (response.data && response.data.imageUrl) {
+        console.log("url images : ",response.data.imageUrl);
+        return response.data.imageUrl;
+      } else {
+        throw new Error("L'URL de l'image n'a pas été retournée.");
+      }
     } catch (error) {
-      console.error("Échec de l'upload de l'image :", error);
-      toast.error("Échec de l'upload de l'image.");
+      console.error("Échec de l'upload de l'image :", error.response?.data || error.message);
+      toast.error("Échec de l'upload de l'image. Vérifiez votre connexion et réessayez.");
       return null;
     }
   };
@@ -77,19 +86,31 @@ const AjouterExpert = () => {
       return;
     }
 
+    const experience = parseInt(formData.experience, 10);
     const imageUrl = await uploadImage();
-    const formDataToSend = { ...formData, image: imageUrl };
+    const formDataToSend = { ...formData, experience, image: imageUrl };
+    console.log("formateur ==> " ,formDataToSend)
+
 
     try {
-      await axios.post("http://localhost:8080/api/expert/ajouter", formDataToSend, {
+      await axios.post("http://localhost:8080/api/formateur/ajouter", formDataToSend, {
         headers: { "Content-Type": "application/json" },
-        withCredentials: true,
       });
-      toast.success("Expert ajouté avec succès !");
-      setFormData({ nom: "", prenom: "", email: "", motDePasse: "" });
+      toast.success("Votre compte a été créé avec succès. Un administrateur activera votre compte dans un délai de 24 heures.");
+      setFormData({
+        nom: "",
+        prenom: "",
+        email: "",
+        motDePasse: "",
+        adresse: "",
+        numTel: "",
+        profession: "",
+        experience: "",
+      });
       setFile(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Erreur lors de l'ajout de l'expert.");
+      const errorMessage = error.response?.data?.message || "Une erreur s'est produite lors de la création du compte.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -98,12 +119,11 @@ const AjouterExpert = () => {
   return (
     <div>
       <Header />
-      <ToastContainer />
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
-          <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Ajouter un Expert</h2>
+          <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Ajouter un Formateur</h2>
           <form onSubmit={handleSubmit} encType="multipart/form-data">
-            {["nom", "prenom", "email", "motDePasse"].map((field) => (
+            {["nom", "prenom", "email", "motDePasse", "adresse", "numTel", "profession", "experience"].map((field) => (
               <div className="mb-4" key={field}>
                 <label htmlFor={field} className="block text-sm font-medium text-gray-700">
                   {field.charAt(0).toUpperCase() + field.slice(1)}
@@ -128,7 +148,7 @@ const AjouterExpert = () => {
             </div>
 
             <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition-all" disabled={loading}>
-              {loading ? "Enregistrement..." : "Ajouter Expert"}
+              {loading ? "Enregistrement..." : "Ajouter Formateur"}
             </button>
           </form>
         </div>
@@ -137,4 +157,4 @@ const AjouterExpert = () => {
   );
 };
 
-export default AjouterExpert;
+export default AjouterFormateur;
