@@ -1,10 +1,10 @@
 const jwt = require("jsonwebtoken");
-const Expert = require("../models/expertModel"); // Import du modèle Expert
+const Expert = require("../models/expertModel");
 
 // Middleware pour authentifier un expert via JWT
 const authenticateTokenExpert = (req, res, next) => {
   const token = req.cookies.expertToken; // Récupérer le token depuis les cookies
-  
+
   if (!token) {
     return res.status(401).json({ success: false, message: "Accès non autorisé. Token manquant." });
   }

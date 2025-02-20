@@ -11,7 +11,7 @@ const authenticateTokenExpert = require('../middlewares/expertMid');
 const authenticateTokenAdmin = require("../middlewares/authenticateTokenAdmin");
 
 // Route pour ajouter un expert (avec l'upload d'image)
-router.post('/ajouter',authenticateTokenAdmin,addExpert ) ;
+router.post('/ajouter', authenticateTokenAdmin, addExpert);
 
 // Route pour la connexion d'un expert
 router.post('/login', loginExpert);

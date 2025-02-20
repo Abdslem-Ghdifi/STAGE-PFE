@@ -43,7 +43,8 @@ expertSchema.methods.comparePassword = async function (candidatePassword) {
 expertSchema.pre("save", async function (next) {
   if (!this.isModified("motDePasse")) return next();
   try {
-    this.motDePasse = await bcrypt.hash(this.motDePasse, 10);
+    const salt = await bcrypt.genSalt(10); // Générer un salt
+    this.motDePasse = await bcrypt.hash(this.motDePasse, salt); // Hacher le mot de passe avec le salt
     next();
   } catch (error) {
     next(error);

@@ -16,7 +16,6 @@ const AjouterExpert = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Gestion des inputs
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -26,12 +25,10 @@ const AjouterExpert = () => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };
 
-  // Gestion du fichier image
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
-  // Validation du formulaire
   const validateForm = () => {
     const newErrors = {};
     const emailRegex = /^\S+@\S+\.\S+$/;
@@ -47,7 +44,6 @@ const AjouterExpert = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Upload de l'image sur le serveur
   const uploadImage = async () => {
     if (!file) return null;
 
@@ -59,15 +55,13 @@ const AjouterExpert = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      return response.data?.imageUrl || null;
+      return response.data.imageUrl || null;
     } catch (error) {
-      console.error("Échec de l'upload de l'image :", error);
-      toast.error("Échec de l'upload de l'image.");
+      toast.error("Échec de l'upload de l'image. Vérifiez votre connexion.");
       return null;
     }
   };
 
-  // Soumission du formulaire
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -77,8 +71,13 @@ const AjouterExpert = () => {
       return;
     }
 
-    const imageUrl = await uploadImage();
-    const formDataToSend = { ...formData, image: imageUrl };
+    let imageUrl = null;
+    if (file) {
+      imageUrl = await uploadImage();
+    }
+
+    const formDataToSend = { ...formData };
+    if (imageUrl) formDataToSend.image = imageUrl;
 
     try {
       await axios.post("http://localhost:8080/api/expert/ajouter", formDataToSend, {
@@ -86,8 +85,7 @@ const AjouterExpert = () => {
         withCredentials: true,
       });
 
-      toast.success("Expert ajouté avec succès !", { position: "top-right" });
-
+      toast.success("Expert ajouté avec succès !");
       setFormData({ nom: "", prenom: "", email: "", motDePasse: "" });
       setFile(null);
     } catch (error) {
@@ -100,7 +98,7 @@ const AjouterExpert = () => {
   return (
     <div>
       <Header />
-      <ToastContainer position="top-right" autoClose={3000}/>
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
         <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
           <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Ajouter un Expert</h2>
@@ -116,16 +114,14 @@ const AjouterExpert = () => {
                   name={field}
                   value={formData[field]}
                   onChange={handleInputChange}
-                  className={`w-full p-2 border ${errors[field] ? "border-red-500" : "border-gray-300"} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  className={`w-full p-2 border ${errors[field] ? "border-red-500" : "border-gray-300"} rounded-md`}
                 />
                 {errors[field] && <p className="text-red-500 text-sm mt-1">{errors[field]}</p>}
               </div>
             ))}
 
             <div className="mb-4">
-              <label htmlFor="file" className="block text-sm font-medium text-gray-700">
-                Image (optionnelle)
-              </label>
+              <label htmlFor="file" className="block text-sm font-medium text-gray-700">Image (optionnelle)</label>
               <input type="file" id="file" accept="image/*" onChange={handleFileChange} className="w-full p-2 border border-gray-300 rounded-md" />
             </div>
 
@@ -135,7 +131,7 @@ const AjouterExpert = () => {
           </form>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </div>
   );
 };
