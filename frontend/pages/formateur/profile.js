@@ -76,7 +76,7 @@ const Profile = () => {
 
       <div className="mt-6 text-center">
         <button
-          onClick={() => router.push("/formateur/edit-profile")}
+          onClick={() => router.push("/formateur/editProfile")}
           className="px-6 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition duration-300"
         >
           Modifier le profil

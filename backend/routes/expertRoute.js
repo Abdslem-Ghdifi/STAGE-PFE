@@ -5,7 +5,8 @@ const {
   addExpert, 
   getExperts, 
   upload, 
-  uploadImage 
+  uploadImage,
+  updateExpertProfile // Importer la nouvelle fonction
 } = require('../controllers/expertController');
 const authenticateTokenExpert = require('../middlewares/expertMid');
 const authenticateTokenAdmin = require("../middlewares/authenticateTokenAdmin");
@@ -35,5 +36,8 @@ router.get("/profile", authenticateTokenExpert, (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 });
+
+// Route pour mettre à jour le profil de l'expert (sauf l'email)
+router.put("/profile/update", authenticateTokenExpert, updateExpertProfile);
 
 module.exports = router;

@@ -136,5 +136,46 @@ const uploadImage = async (req, res) => {
   }
 };
 
+const updateExpertProfile = async (req, res) => {
+  try {
+    const { nom, prenom, motDePasse, image } = req.body;
+    const expertId = req.expert._id; // Récupérer l'ID de l'expert à partir du token
+
+    // Vérifier si l'expert existe
+    const expert = await Expert.findById(expertId);
+    if (!expert) {
+      return res.status(404).json({ success: false, message: "Expert non trouvé." });
+    }
+
+    // Mettre à jour les champs (sauf l'email)
+    if (nom) expert.nom = nom;
+    if (prenom) expert.prenom = prenom;
+    if (motDePasse) {
+      const salt = await bcrypt.genSalt(10);
+      expert.motDePasse = await bcrypt.hash(motDePasse, salt);
+    }
+    if (image) expert.image = image;
+
+    // Sauvegarder les modifications
+    await expert.save();
+
+    // Ne pas renvoyer le mot de passe dans la réponse
+    const expertResponse = {
+      id: expert._id,
+      nom: expert.nom,
+      prenom: expert.prenom,
+      image: expert.image,
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Profil mis à jour avec succès.",
+      expert: expertResponse,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du profil :", error);
+    res.status(500).json({ success: false, message: "Erreur serveur.", error: error.message });
+  }
+};
 // Export des fonctions
-module.exports = { loginExpert, addExpert, getExperts, upload, uploadImage };
+module.exports = { loginExpert, addExpert, getExperts, upload, uploadImage, updateExpertProfile };

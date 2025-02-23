@@ -116,6 +116,7 @@ const getFormateurs = async (req, res) => {
   }
 };
 
+// Fonction pour activer un formateur
 const activerFormateur = async (req, res) => {
   const { formateurId } = req.body; // Récupérer l'ID du formateur depuis le body
 
@@ -162,6 +163,7 @@ const activerFormateur = async (req, res) => {
   }
 };
 
+// Fonction pour la connexion du formateur
 const loginFormateur = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -202,7 +204,7 @@ const loginFormateur = async (req, res) => {
     // Définir le cookie avec le token
     res.cookie('formateurToken', tokenFormateur, {
       httpOnly: false, 
-      secure: process.env.NODE_ENV === 'production', // HTTPS uniquement en production
+      secure: process.env.NODE_ENV === 'production', 
       sameSite: 'Strict',
       maxAge: 60 * 60 * 1000, // 1 heure
     });
@@ -227,4 +229,50 @@ const loginFormateur = async (req, res) => {
   }
 };
 
-module.exports = { loginFormateur, addFormateur, getFormateurs, activerFormateur, upload, uploadImage };
+// Fonction pour modifier le profil du formateur (sauf l'email)
+const updateFormateurProfile = async (req, res) => {
+  try {
+    const { id } = req.formateur; // Récupérer l'ID du formateur depuis le token
+    const { nom, prenom, adresse, numTel, profession, experience, image } = req.body;
+
+    // Vérifier si le formateur existe
+    const formateur = await Formateur.findById(id);
+    if (!formateur) {
+      return res.status(404).json({ success: false, message: "Formateur non trouvé." });
+    }
+
+    // Mettre à jour les champs (sauf l'email)
+    formateur.nom = nom || formateur.nom;
+    formateur.prenom = prenom || formateur.prenom;
+    formateur.adresse = adresse || formateur.adresse;
+    formateur.numTel = numTel || formateur.numTel;
+    formateur.profession = profession || formateur.profession;
+    formateur.experience = experience || formateur.experience;
+    formateur.image = image || formateur.image;
+
+    // Sauvegarder les modifications
+    await formateur.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profil mis à jour avec succès.",
+      formateur: {
+        id: formateur._id,
+        nom: formateur.nom,
+        prenom: formateur.prenom,
+        email: formateur.email,
+        adresse: formateur.adresse,
+        numTel: formateur.numTel,
+        profession: formateur.profession,
+        experience: formateur.experience,
+        image: formateur.image,
+      },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du profil :", error);
+    res.status(500).json({ success: false, message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// Exporter toutes les fonctions
+module.exports = { loginFormateur, addFormateur, getFormateurs, activerFormateur, upload, uploadImage, updateFormateurProfile };
