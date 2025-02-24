@@ -3,6 +3,9 @@ const JWT = require('jsonwebtoken');
 const jwt = require('jsonwebtoken');
 
 const Formateur = require('../models/formateurModel');
+const Formation = require('../models/formationModel');
+const Categorie = require('../models/categorieModel');
+
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');

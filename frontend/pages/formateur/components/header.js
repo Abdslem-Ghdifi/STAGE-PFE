@@ -79,7 +79,7 @@ const HeaderFormateur = () => {
           </span>
         </Link>
 
-        <Link href="/formateur/publier">
+        <Link href="/formateur/publierFormation">
           <span className="cursor-pointer hover:text-blue-400 transition duration-300">
             Publier une formation
           </span>

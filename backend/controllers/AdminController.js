@@ -1,7 +1,11 @@
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/AdminModel");
+const User = require("../models/userModel");
+const Categorie = require('../models/categorieModel');
+const Formateur = require("../models/formateurModel");
+const Expert = require("../models/expertModel");
 const dotenv = require("dotenv");
-dotenv.config(); 
+dotenv.config();
 
 // Fonction de connexion (login)
 const loginAdmin = async (req, res) => {
@@ -73,64 +77,64 @@ const loginAdmin = async (req, res) => {
 
 // Fonction pour créer un nouvel admin
 const createAdmin = async (req, res) => {
-    const { nom, prenom, email, password } = req.body;
-  
-    try {
-      // Vérifier si un admin avec le même email existe déjà
-      const existingAdmin = await Admin.findOne({ email });
-      if (existingAdmin) {
-        return res.status(400).json({ success: false, message: 'Un admin avec cet email existe déjà.' });
-      }
-  
-      // Créer un nouvel admin
-      const newAdmin = new Admin({
-        nom,
-        prenom,
-        email,
-        password, // Le mot de passe sera haché automatiquement grâce à notre pré-sauvegarde dans le modèle
-      });
-  
-      // Sauvegarder l'admin dans la base de données
-      await newAdmin.save();
-  
-      // Répondre avec l'admin créé sans le mot de passe
-      res.status(201).json({
-        success: true,
-        message: 'Admin créé avec succès.',
-        admin: {
-          id: newAdmin._id,
-          nom: newAdmin.nom,
-          prenom: newAdmin.prenom,
-          email: newAdmin.email,
-        },
-      });
-    } catch (error) {
-      console.error('Erreur lors de la création de l\'admin :', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur serveur lors de la création de l\'admin.',
-      });
+  const { nom, prenom, email, password } = req.body;
+
+  try {
+    // Vérifier si un admin avec le même email existe déjà
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ success: false, message: 'Un admin avec cet email existe déjà.' });
     }
-  };
-  
-// Fonction pour récupérer le profil de l'admin
-const getAdminProfile = async (req, res) => {
-  async (req, res) => {
-    try {
-      // Le profil de l'admin est déjà stocké dans req.admin par le middleware authenticateTokenAdmin
-      res.status(200).json({
-        success: true,
-        admin: req.admin,  // Retourner les informations de l'admin
-      });
-    } catch (error) {
-      console.error('Erreur lors de la récupération du profil de l\'admin :', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur serveur.',
-      });
-    }
+
+    // Créer un nouvel admin
+    const newAdmin = new Admin({
+      nom,
+      prenom,
+      email,
+      password, // Le mot de passe sera haché automatiquement grâce à notre pré-sauvegarde dans le modèle
+    });
+
+    // Sauvegarder l'admin dans la base de données
+    await newAdmin.save();
+
+    // Répondre avec l'admin créé sans le mot de passe
+    res.status(201).json({
+      success: true,
+      message: 'Admin créé avec succès.',
+      admin: {
+        id: newAdmin._id,
+        nom: newAdmin.nom,
+        prenom: newAdmin.prenom,
+        email: newAdmin.email,
+      },
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'admin :', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur lors de la création de l\'admin.',
+    });
   }
 };
+
+// Fonction pour récupérer le profil de l'admin
+const getAdminProfile = async (req, res) => {
+  try {
+    // Le profil de l'admin est déjà stocké dans req.admin par le middleware authenticateTokenAdmin
+    res.status(200).json({
+      success: true,
+      admin: req.admin, // Retourner les informations de l'admin
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération du profil de l\'admin :', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur.',
+    });
+  }
+};
+
+// Fonction pour déconnecter l'admin
 const logoutAdmin = (req, res) => {
   res.clearCookie("adminToken", {
     httpOnly: true,
@@ -141,4 +145,39 @@ const logoutAdmin = (req, res) => {
   res.status(200).json({ success: true, message: "Déconnexion réussie." });
 };
 
-module.exports = { loginAdmin , createAdmin ,getAdminProfile ,logoutAdmin};
+// Fonction pour supprimer un utilisateur (user, formateur, expert)
+const deleteUser = async (req, res) => {
+  const { userId, userType } = req.body;
+
+  try {
+    let user;
+    switch (userType) {
+      case 'user':
+        user = await User.findByIdAndDelete(userId);
+        break;
+      case 'formateur':
+        user = await Formateur.findByIdAndDelete(userId);
+        break;
+      case 'expert':
+        user = await Expert.findByIdAndDelete(userId);
+        break;
+      default:
+        return res.status(400).json({ success: false, message: 'Type d\'utilisateur non valide.' });
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur non trouvé.' });
+    }
+
+    res.status(200).json({ success: true, message: 'Utilisateur supprimé avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l\'utilisateur:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur.' });
+  }
+};
+
+
+
+
+
+module.exports = { loginAdmin, createAdmin, getAdminProfile, logoutAdmin, deleteUser };

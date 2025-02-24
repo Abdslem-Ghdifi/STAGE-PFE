@@ -1,20 +1,17 @@
 const express = require("express");
-const { loginAdmin, logoutAdmin ,createAdmin } = require("../controllers/AdminController");
-const authenticateTokenAdmin= require("../middlewares/authenticateTokenAdmin");
-const {getUsers} = require('../controllers/UserController')
+const { loginAdmin, logoutAdmin, createAdmin, getAdminProfile, deleteUser, afficherCategories, publierCategories } = require("../controllers/AdminController");
+const authenticateTokenAdmin = require("../middlewares/authenticateTokenAdmin");
+const { getUsers } = require('../controllers/UserController');
 
 const router = express.Router();
-router.post("/create",createAdmin)
-// Route de connexion (login)
+
+router.post("/create", createAdmin);
 router.post("/login", loginAdmin);
-
-// Route de déconnexion (logout)
 router.post("/logout", logoutAdmin);
+router.get("/profile", authenticateTokenAdmin, getAdminProfile);
+router.post("/deleteUser", authenticateTokenAdmin, deleteUser);
+router.get("/admin/getUsers", authenticateTokenAdmin, getUsers);
 
-// Route test pour vérifier l'authentification (accessible uniquement aux admins connectés)
-router.get("/profile", authenticateTokenAdmin, (req, res) => {
-  res.json({ success: true, message: "Accès autorisé", admin: req.admin });
-});
-//
-router.get("/getUsers",authenticateTokenAdmin,getUsers)
+
+
 module.exports = router;

@@ -4,16 +4,17 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "./components/header";
 import Footer from "./components/footer";
+import { FaTrash } from "react-icons/fa";
 
 const ExpertsPage = () => {
   const [experts, setExperts] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(""); // État pour la recherche
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Récupérer les experts
   const fetchExperts = async () => {
     try {
       const response = await axios.get("http://localhost:8080/api/expert/getExperts", {
-        withCredentials: true, // Inclure les cookies dans la requête
+        withCredentials: true,
       });
       setExperts(response.data.experts);
     } catch (error) {
@@ -26,6 +27,25 @@ const ExpertsPage = () => {
     fetchExperts();
   }, []);
 
+  // Supprimer un expert
+  const deleteExpert = async (expertId) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet expert ?")) return;
+    
+    try {
+      await axios.post(
+        "http://localhost:8080/api/admin/deleteUser",
+        { userId: expertId, userType: "expert" },
+        { withCredentials: true }
+      );
+      
+      toast.success("Expert supprimé avec succès.");
+      setExperts(experts.filter((expert) => expert._id !== expertId));
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'expert:", error);
+      toast.error("Erreur lors de la suppression de l'expert.");
+    }
+  };
+
   // Filtrer les experts en fonction de la recherche
   const filteredExperts = experts.filter((expert) => {
     return (
@@ -35,7 +55,7 @@ const ExpertsPage = () => {
     );
   });
 
-  // Ajouter un expert (Exemple : redirection vers une page d'ajout)
+  // Ajouter un expert
   const addExpert = () => {
     window.location.href = "/admin/addExpert";
   };
@@ -61,7 +81,7 @@ const ExpertsPage = () => {
             type="text"
             placeholder="Rechercher un expert..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)} // Mettre à jour la valeur de recherche
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-lg"
           />
         </div>
@@ -75,6 +95,7 @@ const ExpertsPage = () => {
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Nom</th>
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Prénom</th>
                 <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Email</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody className="text-sm text-gray-600">
@@ -90,6 +111,11 @@ const ExpertsPage = () => {
                   <td className="px-6 py-4">{expert.nom}</td>
                   <td className="px-6 py-4">{expert.prenom}</td>
                   <td className="px-6 py-4">{expert.email}</td>
+                  <td className="px-6 py-4">
+                    <button onClick={() => deleteExpert(expert._id)} className="text-red-600 hover:text-red-800">
+                      <FaTrash size={18} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

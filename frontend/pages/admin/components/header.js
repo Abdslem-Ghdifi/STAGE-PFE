@@ -105,6 +105,10 @@ const Header = () => {
           )}
         </Link>
 
+        <Link href="/admin/categorie" className="relative hover:text-blue-300 transition duration-300">
+          <span className="font-medium">Categorie</span>
+        </Link>
+
         {/* Profil Admin */}
         <div className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition duration-300">
           <img src={admin.image || "/images/admin.png"} alt="Admin Avatar" className="h-8 w-8 rounded-full border-2 border-gray-300" />
