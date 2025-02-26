@@ -16,9 +16,10 @@ const PublierFormation = () => {
   const [prix, setPrix] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const router = useRouter();
   const [token, setToken] = useState(null);
+  const [file, setFile] = useState(null);  // Pour l'image de formation
+
+  const router = useRouter();
 
   // Vérification du token
   useEffect(() => {
@@ -68,22 +69,54 @@ const PublierFormation = () => {
     fetchFormateur();
   }, [token]);
 
+  // Fonction pour gérer le changement d'image
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  // Fonction d'upload de l'image
+  const uploadImage = async () => {
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await axios.post('http://localhost:8080/api/formateur/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (response.data && response.data.imageUrl) {
+        return response.data.imageUrl;
+      } else {
+        throw new Error('L\'URL de l\'image n\'a pas été retournée.');
+      }
+    } catch (error) {
+      setMessage('Échec de l\'upload de l\'image.');
+      console.error("Erreur lors de l'upload de l'image", error);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage(''); // Reset message before submitting
 
     try {
+      const imageUrl = await uploadImage();
       const response = await axios.post('http://localhost:8080/api/formation/publier', {
         titre,
         description,
         categorieId,
         formateurId,
         prix,
+        image: imageUrl, // Ajouter l'URL de l'image dans la requête
       }, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
+
       setMessage('Formation publiée avec succès!');
       router.push('/formations'); // Rediriger vers la liste des formations après publication
     } catch (error) {
@@ -158,6 +191,17 @@ const PublierFormation = () => {
                 <option value="">Aucune catégorie disponible</option>
               )}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="image" className="block text-sm font-medium text-gray-700">Image de la formation</label>
+            <input
+              type="file"
+              id="image"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
 
           <div>

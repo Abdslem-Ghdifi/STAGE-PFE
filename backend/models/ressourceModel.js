@@ -1,17 +1,21 @@
 const mongoose = require('mongoose');
 
 const ressourceSchema = new mongoose.Schema({
-  type: {
+  titre: {
     type: String,
-    enum: ['pdf', 'image'],
     required: true
-  },
-  fichier: {
-    type: String,
-    required: true // Chemin vers le fichier téléchargé
   },
   ordre: {
     type: Number,
+    required: true
+  },
+  type: {
+    type: String,
+    enum: ['video', 'pdf'],
+    required: true
+  },
+  url: {
+    type: String,
     required: true
   },
   partie: {
@@ -26,4 +30,4 @@ const ressourceSchema = new mongoose.Schema({
 });
 
 const Ressource = mongoose.model('Ressource', ressourceSchema);
-module.exports = Ressource; // Export de la modélisation
+module.exports = Ressource;

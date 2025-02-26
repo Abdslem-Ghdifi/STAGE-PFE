@@ -15,6 +15,7 @@ const formateurRoute = require('./routes/formateurRouter')
 const expertRoute = require("./routes/expertRoute.js");
 const formationRoute = require('./routes/formationRoute');
 const categorieRoute = require("./routes/categorieRoute.js")
+
 dotenv.config();
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/api/formateur",formateurRoute);
 app.use("/api/expert",expertRoute);
 app.use('/api/formation', formationRoute);
 app.use('/api/categorie', categorieRoute);
+
 
 // Test route
 app.get("/", (req, res) => {

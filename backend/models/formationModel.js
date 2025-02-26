@@ -35,6 +35,11 @@ const formationSchema = new mongoose.Schema({
     type: Boolean,
     default: false // Par défaut, la formation n'est pas encore acceptée par l'admin
   },
+  image: {
+    type: String,
+    required: false
+  },
+ 
   createdAt: {
     type: Date,
     default: Date.now
@@ -43,4 +48,4 @@ const formationSchema = new mongoose.Schema({
 
 const Formation = mongoose.model('Formation', formationSchema);
 
-module.exports = Formation; // Export de la modélisation
+module.exports = Formation; 
