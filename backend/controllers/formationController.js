@@ -308,6 +308,66 @@ const getRessources = async (req, res) => {
   }
 };
 
+const getFormationsEnAttente = async (req, res) => {
+  try {
+    const formations = await Formation.find({ accepteParExpert: false })
+      .populate({
+        path: 'formateur',
+        select: 'nom prenom email profession experience image'
+      });
+
+    res.status(200).json(formations);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur", error });
+  }
+};
+
+const getFormationComplete = async (formationId) => {
+  try {
+    const formation = await Formation.findById(formationId)
+      .populate({
+        path: 'categorie',
+        select: 'nom description'
+      })
+      .populate({
+        path: 'formateur',
+        select: 'nom prenom email'
+      })
+      .populate({
+        path: 'chapitres',
+        options: { sort: { ordre: 1 } }, // Trier les chapitres par ordre
+        populate: {
+          path: 'parties',
+          options: { sort: { ordre: 1 } }, // Trier les parties par ordre
+          populate: {
+            path: 'ressources',
+            options: { sort: { ordre: 1 } }, // Trier les ressources par ordre
+          }
+        }
+      });
+
+    if (!formation) {
+      return { success: false, message: 'Formation non trouvée' };
+    }
+
+    return { success: true, data: formation };
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la formation:', error);
+    return { success: false, message: 'Erreur serveur' };
+  }
+};
+
+const getFormationById = async (req, res) => {
+  const { id } = req.params;
+
+  const result = await getFormationComplete(id);
+
+  if (result.success) {
+    return res.status(200).json(result.data);
+  } else {
+    return res.status(404).json({ message: result.message });
+  }
+};
 module.exports = {
   publierFormation,
   getFormations,
@@ -321,4 +381,6 @@ module.exports = {
   getChapitres,
   getParties,
   getRessources,
+  getFormationsEnAttente ,
+  getFormationById ,
 };

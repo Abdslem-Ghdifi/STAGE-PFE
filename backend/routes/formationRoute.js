@@ -14,10 +14,12 @@ const {
   getChapitres,
   getParties,
   getRessources,
+  getFormationsEnAttente ,
+  getFormationById ,
 } = require('../controllers/formationController');
 const authenticateTokenFormateur = require('../middlewares/formateurMid'); // Middleware pour le formateur
 const authenticateTokenAdmin = require('../middlewares/authenticateTokenAdmin'); // Middleware pour l'admin
-
+const  authenticateTokenExpert = require ('../middlewares/expertMid');
 // Configuration de multer pour gérer l'upload des fichiers
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -59,7 +61,10 @@ router.patch('/:formationId/accepter-par-admin', authenticateTokenAdmin, accepte
 
 // Route pour récupérer les formations par formateur
 router.post("/mesFormation", authenticateTokenFormateur, getFormationsByFormateur);
+// Route pour récupérer tous les formations par expert 
+router.get('/en-attente',authenticateTokenExpert ,getFormationsEnAttente);
 
+router.get('/:id', getFormationById);
 // Route pour retourner les informations du formateur
 router.get("/profile", authenticateTokenFormateur, (req, res) => {
   try {

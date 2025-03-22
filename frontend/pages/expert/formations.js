@@ -1,0 +1,109 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/router";
+import HeaderExpert from "../components/header";
+import Footer from "../../user/components/footer";
+
+const FormationDetails = () => {
+  const [formation, setFormation] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const router = useRouter();
+  const { id } = router.query; // Récupère l'ID de la formation depuis l'URL dynamique
+
+  useEffect(() => {
+    if (!id) return; // Si l'ID n'est pas encore disponible, ne fais pas la requête
+
+    const fetchFormation = async () => {
+      try {
+        const response = await axios.get(`http://localhost:8080/api/formation/${id}`); // Appel à l'API pour récupérer la formation complète
+        setFormation(response.data); // On met à jour le state avec les données de la formation
+        setLoading(false);
+      } catch (error) {
+        setError("Erreur lors de la récupération des données.");
+        setLoading(false);
+      }
+    };
+
+    fetchFormation();
+  }, [id]);
+
+  if (loading) return <p className="text-center text-lg">Chargement...</p>;
+  if (error) return <p className="text-center text-lg text-red-500">{error}</p>;
+
+  return (
+    <div>
+      <HeaderExpert />
+      {formation ? (
+        <div className="container mx-auto p-8">
+          {/* Section principale de la formation */}
+          <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <h1 className="text-3xl font-semibold text-center text-blue-700 mb-4">{formation.titre}</h1>
+            <div className="flex justify-center mb-6">
+              {/* Image de la formation */}
+              {formation.image && (
+                <img
+                  src={formation.image}
+                  alt={formation.titre}
+                  className="rounded-lg w-full max-w-lg object-cover h-72"
+                />
+              )}
+            </div>
+            <p className="text-lg text-gray-700">{formation.description}</p>
+          </div>
+
+          {/* Section Chapitres */}
+          <div className="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <h3 className="text-xl font-semibold text-blue-600 mb-4">Chapitres</h3>
+            <div>
+              {formation.chapitres.map((chapitre, index) => (
+                <div key={chapitre._id} className="mb-6">
+                  <h4 className="text-lg font-semibold text-blue-500 mb-2">
+                    Chapitre {index + 1}: {chapitre.titre}
+                  </h4>
+
+                  {/* Partie du Chapitre */}
+                  <div className="ml-4">
+                    {chapitre.parties.map((partie, partieIndex) => (
+                      <div key={partie._id} className="mb-4">
+                        {/* Affichage de la partie */}
+                        <h5 className="font-medium text-gray-700">
+                          Partie {partieIndex + 1}: {partie.titre}
+                        </h5>
+
+                        {/* Ressources de la Partie */}
+                        <div className="ml-6">
+                          {partie.ressources.map((ressource) => (
+                            <div key={ressource._id} className="text-sm text-gray-500 mb-2">
+                              <p className="font-semibold">{ressource.nom}</p>
+                              {/* Affichage du lien vers la ressource */}
+                              {ressource.lien && (
+                                <a
+                                  href={ressource.lien}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 hover:underline"
+                                >
+                                  Accéder à la ressource
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-center text-lg">Aucune formation trouvée</p>
+      )}
+      <Footer />
+    </div>
+  );
+};
+
+export default FormationDetails;

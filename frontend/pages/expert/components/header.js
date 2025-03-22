@@ -80,7 +80,7 @@ const HeaderExpert = () => {
         <Link href="./accueil">
           <span className="text-lg font-semibold hover:text-blue-700 cursor-pointer">Accueil</span>
         </Link>
-        <Link href="/formation">
+        <Link href="./formations">
           <span className="text-lg font-semibold hover:text-blue-700 cursor-pointer">Formation</span>
         </Link>
         <Link href="./contact">
