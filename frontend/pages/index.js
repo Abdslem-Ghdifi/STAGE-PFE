@@ -9,7 +9,7 @@ export default function HomePage() {
     <div>
       <Header />
       <Vidimg/>
-      <ImageSlider/>
+      
       <CourseCard/>
       <Footer/>
     </div>

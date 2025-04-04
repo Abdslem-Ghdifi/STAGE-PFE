@@ -1,10 +1,11 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
+const Chapitre = require('../models/chapitreModel');
 const {
   publierFormation,
   getFormations,
-  accepterParExpert,
+
   accepterParAdmin,
   getCategories,
   getFormationsByFormateur,
@@ -16,6 +17,8 @@ const {
   getRessources,
   getFormationsEnAttente ,
   getFormationById ,
+  validerFormationParFormateur,
+ 
 } = require('../controllers/formationController');
 const authenticateTokenFormateur = require('../middlewares/formateurMid'); // Middleware pour le formateur
 const authenticateTokenAdmin = require('../middlewares/authenticateTokenAdmin'); // Middleware pour l'admin
@@ -28,11 +31,12 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Génère un nom de fichier unique en ajoutant un timestamp
-    cb(null, Date.now() + '-' + file.originalname); // Exemple : 1649123456789-fichier.pdf
+    cb(null, Date.now() + '-' + file.originalname); 
   },
 });
 
 const upload = multer({ storage });
+
 
 // Routes pour ajouter des éléments
 router.post('/ajouterChapitre', authenticateTokenFormateur, ajouterChapitre);
@@ -53,8 +57,11 @@ router.get('/getCategorie', getCategories);
 // Route pour récupérer toutes les formations (authentification nécessaire pour admin)
 router.get('/', authenticateTokenAdmin, getFormations);
 
-// Route pour accepter la formation par l'expert (authentification nécessaire pour admin)
-router.patch('/:formationId/accepter-par-expert', authenticateTokenAdmin, accepterParExpert);
+//Route pour valider une formation par le formateur
+router.put('/validerFormation/:formationId', authenticateTokenFormateur, validerFormationParFormateur);
+
+
+
 
 // Route pour accepter la formation par l'admin (authentification nécessaire pour admin)
 router.patch('/:formationId/accepter-par-admin', authenticateTokenAdmin, accepterParAdmin);
@@ -76,6 +83,31 @@ router.get("/profile", authenticateTokenFormateur, (req, res) => {
   } catch (error) {
     console.error("Erreur interne du serveur", error);
     res.status(500).json({ message: "Erreur interne du serveur." });
+  }
+});
+router.put('/:chapitreId', async (req, res) => {
+  const { chapitreId } = req.params;  // Utiliser chapitreId au lieu de id
+  const { AcceptedParExpert, commentaire } = req.body;
+
+  try {
+    const chapitre = await Chapitre.findById(chapitreId);  // Utiliser chapitreId ici aussi
+    if (!chapitre) {
+      return res.status(404).json({ message: 'Chapitre non trouvé' });
+    }
+
+    // Si aucun commentaire n'est passé, mettre un commentaire par défaut
+    const commentaireFinal = commentaire || "L'expert a accepté ce chapitre.";
+
+    // Mise à jour des champs
+    chapitre.AcceptedParExpert = AcceptedParExpert;
+    chapitre.commentaire = commentaireFinal;
+
+    await chapitre.save();
+
+    res.status(200).json({ message: 'Chapitre mis à jour avec succès', chapitre });
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour du chapitre:', err);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 

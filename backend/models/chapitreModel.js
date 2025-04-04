@@ -9,6 +9,7 @@ const chapitreSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  
   formation: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Formation',
@@ -18,6 +19,15 @@ const chapitreSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Partie'
   }],
+  AcceptedParExpert: {
+    type: Boolean,
+    default:false
+  },
+
+  commentaire: {
+    type: String,
+    default :"",
+  },
   createdAt: {
     type: Date,
     default: Date.now

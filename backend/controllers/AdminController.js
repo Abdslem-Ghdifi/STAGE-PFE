@@ -150,22 +150,22 @@ const deleteUser = async (req, res) => {
   const { userId, userType } = req.body;
 
   try {
-    let user;
+    let alluser;
     switch (userType) {
       case 'user':
-        user = await User.findByIdAndDelete(userId);
+        alluser = await User.findByIdAndDelete(userId);
         break;
       case 'formateur':
-        user = await Formateur.findByIdAndDelete(userId);
+        alluser = await Formateur.findByIdAndDelete(userId);
         break;
       case 'expert':
-        user = await Expert.findByIdAndDelete(userId);
+        alluser = await Expert.findByIdAndDelete(userId);
         break;
       default:
         return res.status(400).json({ success: false, message: 'Type d\'utilisateur non valide.' });
     }
 
-    if (!user) {
+    if (!alluser) {
       return res.status(404).json({ success: false, message: 'Utilisateur non trouvé.' });
     }
 

@@ -4,13 +4,12 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaTrash } from "react-icons/fa";
 import Header from "./components/header";
-import Footer from "./components/footer";
+import Footer from "../user/components/footer";
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userToDelete, setUserToDelete] = useState(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -18,7 +17,16 @@ const UsersList = () => {
         const response = await axios.get("http://localhost:8080/api/admin/getUsers", {
           withCredentials: true,
         });
-        setUsers(response.data.users);
+
+        // Afficher la réponse API pour vérifier la structure
+        console.log("Réponse API:", response.data);
+
+        // Assurez-vous que la structure des utilisateurs est correcte
+        if (response.data.success && Array.isArray(response.data.users)) {
+          setUsers(response.data.users);
+        } else {
+          toast.error("Erreur lors de la récupération des utilisateurs.");
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération des utilisateurs", error);
         toast.error("Erreur lors de la récupération des utilisateurs.");
@@ -29,33 +37,36 @@ const UsersList = () => {
     fetchUsers();
   }, []);
 
-  const deleteUser = async () => {
-    if (!userToDelete) return;
+  const deleteUser = async (userId) => {
+    if (!userId) {
+      toast.error("ID utilisateur invalide.");
+      return;
+    }
+
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return;
 
     try {
-      await axios.post(
-        "http://localhost:8080/api/admin/deleteUser",
-        { userId: userToDelete, userType: "user" },
-        { withCredentials: true }
+      const response = await axios.delete(
+        `http://localhost:8080/api/admin/deleteUser/${userId}`,
+        {
+          withCredentials: true,
+        }
       );
-      setUsers(users.filter((user) => user._id !== userToDelete));
-      toast.success("Utilisateur supprimé avec succès.");
-      setUserToDelete(null);
+
+      if (response.status === 200) {
+        toast.success("Utilisateur supprimé avec succès.");
+        setUsers(users.filter((user) => user.id !== userId)); // Filtrer l'utilisateur supprimé
+      }
     } catch (error) {
-      console.error("Erreur lors de la suppression de l'utilisateur", error);
-      toast.error("Erreur lors de la suppression de l'utilisateur.");
+      console.error("Erreur lors de la suppression de l'utilisateur :", error);
+      toast.error(error.response?.data?.message || "Erreur lors de la suppression.");
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    return (
-      user.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.prenom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.adresse.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.telephone.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const filteredUsers = users.filter((user) =>
+    [user.nom, user.prenom, user.email, user.adresse, user.telephone]
+      .some((field) => field?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -89,59 +100,42 @@ const UsersList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user, index) => (
-                    <tr key={user._id || index} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-800">{user.nom}</td>
-                      <td className="px-6 py-4 text-sm text-gray-800">{user.prenom}</td>
-                      <td className="px-6 py-4 text-sm text-gray-800">{user.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-800">{user.adresse}</td>
-                      <td className="px-6 py-4 text-sm text-gray-800">{user.telephone}</td>
-                      <td className="px-6 py-4">
-                        {user.image ? (
-                          <img src={user.image} alt={user.nom} className="h-12 w-12 rounded-full" />
-                        ) : (
-                          <span className="text-gray-500">Aucune image</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => setUserToDelete(user._id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <FaTrash size={18} />
-                        </button>
-                      </td>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id || user._id} className="border-b hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-800">{user.nom}</td>
+                        <td className="px-6 py-4 text-sm text-gray-800">{user.prenom}</td>
+                        <td className="px-6 py-4 text-sm text-gray-800">{user.email}</td>
+                        <td className="px-6 py-4 text-sm text-gray-800">{user.adresse}</td>
+                        <td className="px-6 py-4 text-sm text-gray-800">{user.telephone}</td>
+                        <td className="px-6 py-4">
+                          {user.image ? (
+                            <img src={user.image} alt={user.nom} className="h-12 w-12 rounded-full" />
+                          ) : (
+                            <span className="text-gray-500">Aucune image</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => deleteUser(user.id || user._id)} // Assurez-vous que 'id' ou '_id' est utilisé selon l'API
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <FaTrash size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center py-4">Aucun utilisateur trouvé</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
           )}
         </div>
       </div>
-
-      {userToDelete && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Confirmer la suppression</h2>
-            <p>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</p>
-            <div className="mt-4 flex justify-end space-x-4">
-              <button
-                onClick={() => setUserToDelete(null)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={deleteUser}
-                className="bg-red-500 text-white px-4 py-2 rounded-md"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Footer className="fixed bottom-0 w-full z-50" />
       <ToastContainer position="bottom-right" autoClose={3000} />

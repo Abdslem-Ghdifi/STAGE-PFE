@@ -51,7 +51,7 @@ const AjouterExpert = () => {
     imageData.append("image", file);
 
     try {
-      const response = await axios.post("http://localhost:8080/api/expert/upload", imageData, {
+      const response = await axios.post("http://localhost:8080/api/formateur/upload", imageData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

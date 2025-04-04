@@ -9,19 +9,16 @@ const Formateur = require('../models/formateurModel');
 const publierFormation = async (req, res) => {
   try {
     const { titre, description, categorieId, formateurId, prix } = req.body;
-    let image = req.body.image || req.file?.path;  // Récupérer l'image depuis le body ou depuis le fichier uploadé
+    let image = req.body.image || req.file?.path;
 
-    // Vérification des données
     if (!titre || !description || !categorieId || !formateurId || !prix) {
       return res.status(400).json({ message: "Tous les champs sont requis." });
     }
 
-    // Vérifier si une image est présente
     if (!image) {
       return res.status(400).json({ message: "Une image est requise pour la formation." });
     }
 
-    // Créer une nouvelle formation
     const formation = new Formation({
       titre,
       description,
@@ -29,10 +26,9 @@ const publierFormation = async (req, res) => {
       formateur: formateurId,
       chapitres: [],
       prix,
-      image, // Ajouter l'image à la formation
+      image,
     });
 
-    // Enregistrement dans la base de données
     const savedFormation = await formation.save();
 
     return res.status(201).json({
@@ -45,7 +41,6 @@ const publierFormation = async (req, res) => {
     return res.status(500).json({ message: "Erreur lors de la publication de la formation." });
   }
 };
-
 
 // Fonction pour récupérer toutes les formations
 const getFormations = async (req, res) => {
@@ -331,17 +326,20 @@ const getFormationComplete = async (formationId) => {
       })
       .populate({
         path: 'formateur',
-        select: 'nom prenom email'
+        select: 'nom prenom email image'
       })
       .populate({
         path: 'chapitres',
-        options: { sort: { ordre: 1 } }, // Trier les chapitres par ordre
+        options: { sort: { ordre: 1 } },
+        select: 'titre description AcceptedParExpert commentaire ordre parties', // Ajout explicite
         populate: {
           path: 'parties',
-          options: { sort: { ordre: 1 } }, // Trier les parties par ordre
+          select: 'titre description ordre ressources',
+          options: { sort: { ordre: 1 } },
           populate: {
             path: 'ressources',
-            options: { sort: { ordre: 1 } }, // Trier les ressources par ordre
+            select: 'titre type url ordre',
+            options: { sort: { ordre: 1 } },
           }
         }
       });
@@ -357,6 +355,7 @@ const getFormationComplete = async (formationId) => {
   }
 };
 
+
 const getFormationById = async (req, res) => {
   const { id } = req.params;
 
@@ -368,6 +367,30 @@ const getFormationById = async (req, res) => {
     return res.status(404).json({ message: result.message });
   }
 };
+
+// Fonction pour qu'un formateur valide une formation
+const validerFormationParFormateur = async (req, res) => {
+  try {
+    const { formationId } = req.params;
+
+    const formation = await Formation.findById(formationId);
+    if (!formation) {
+      return res.status(404).json({ message: "Formation non trouvée." });
+    }
+
+    formation.validerParFormateur = true;
+    await formation.save();
+
+    res.status(200).json({ message: "Formation validée par le formateur avec succès.", formation });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur lors de la validation de la formation." });
+  }
+};
+
+
+
+
 module.exports = {
   publierFormation,
   getFormations,
@@ -383,4 +406,6 @@ module.exports = {
   getRessources,
   getFormationsEnAttente ,
   getFormationById ,
+  validerFormationParFormateur,
+
 };

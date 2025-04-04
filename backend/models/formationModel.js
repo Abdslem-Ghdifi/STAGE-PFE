@@ -27,10 +27,15 @@ const formationSchema = new mongoose.Schema({
     type: Number, // Le prix de la formation
     required: true
   },
+  validerParFormateur: {
+    type: Boolean,
+    default: false // Par défaut, la formation n'est pas encore validée par le formateur
+  },
   accepteParExpert: {
     type: Boolean,
     default: false // Par défaut, la formation n'est pas encore acceptée par l'expert
   },
+
   accepteParAdmin: {
     type: Boolean,
     default: false // Par défaut, la formation n'est pas encore acceptée par l'admin

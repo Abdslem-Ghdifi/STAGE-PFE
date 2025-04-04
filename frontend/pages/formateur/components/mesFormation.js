@@ -159,6 +159,17 @@ const Formations = () => {
       setMessage('Erreur lors de l\'ajout des ressources.');
     }
   };
+  const handleValiderFormation = async (formationId) => {
+    try {
+      await axios.put(`http://localhost:8080/api/formation/validerFormation/${formationId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      });
+      setMessage('Formation validée avec succès.');
+    } catch (error) {
+      setMessage('Erreur lors de la validation de la formation.');
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -184,6 +195,12 @@ const Formations = () => {
               )}
               <h3 className="text-xl font-semibold mt-2 text-gray-800">{formation.titre}</h3>
               <p className="text-gray-600 mt-1">{formation.description}</p>
+              <button
+                onClick={() => handleValiderFormation(formation._id)}
+                className="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                Valider la Formation
+              </button>
             </div>
           ))}
         </div>
