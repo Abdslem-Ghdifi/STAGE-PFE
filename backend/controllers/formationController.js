@@ -356,6 +356,7 @@ const getFormationComplete = async (formationId) => {
 };
 
 
+
 const getFormationById = async (req, res) => {
   const { id } = req.params;
 
