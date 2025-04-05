@@ -18,6 +18,8 @@ const {
   getFormationsEnAttente ,
   getFormationById ,
   validerFormationParFormateur,
+  getEtatValidationParFormateur,
+  getChapitresAvecValidation,
  
 } = require('../controllers/formationController');
 const authenticateTokenFormateur = require('../middlewares/formateurMid'); // Middleware pour le formateur
@@ -60,7 +62,13 @@ router.get('/', authenticateTokenAdmin, getFormations);
 //Route pour valider une formation par le formateur
 router.put('/validerFormation/:formationId', authenticateTokenFormateur, validerFormationParFormateur);
 
+// Route pour récupérer les chapitres avec état d'acceptation de l'expert et les commentaires
+router.get('/chapitres/:formationId', getChapitresAvecValidation);
 
+
+
+// Route pour récupérer l'état de validation d'une formation par le formateur
+router.get('/:formationId/validation', authenticateTokenFormateur, getEtatValidationParFormateur);
 
 
 // Route pour accepter la formation par l'admin (authentification nécessaire pour admin)
@@ -98,8 +106,14 @@ router.put('/:chapitreId', async (req, res) => {
     // Si aucun commentaire n'est passé, mettre un commentaire par défaut
     const commentaireFinal = commentaire || "L'expert a accepté ce chapitre.";
 
+    // Vérification que la valeur de AcceptedParExpert est valide
+    const validStatuses = ['encours', 'accepter', 'refuser'];
+    if (AcceptedParExpert && !validStatuses.includes(AcceptedParExpert)) {
+      return res.status(400).json({ message: 'Statut AcceptedParExpert invalide' });
+    }
+
     // Mise à jour des champs
-    chapitre.AcceptedParExpert = AcceptedParExpert;
+    chapitre.AcceptedParExpert = AcceptedParExpert || 'encours'; // Si AcceptedParExpert n'est pas fourni, mettre 'encours'
     chapitre.commentaire = commentaireFinal;
 
     await chapitre.save();

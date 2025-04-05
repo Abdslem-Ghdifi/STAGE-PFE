@@ -305,7 +305,7 @@ const getRessources = async (req, res) => {
 
 const getFormationsEnAttente = async (req, res) => {
   try {
-    const formations = await Formation.find({ accepteParExpert: false })
+    const formations = await Formation.find({ validerParFormateur: true })
       .populate({
         path: 'formateur',
         select: 'nom prenom email profession experience image'
@@ -326,7 +326,7 @@ const getFormationComplete = async (formationId) => {
       })
       .populate({
         path: 'formateur',
-        select: 'nom prenom email image'
+        select: 'nom prenom email image profession experience'
       })
       .populate({
         path: 'chapitres',
@@ -371,24 +371,119 @@ const getFormationById = async (req, res) => {
 
 // Fonction pour qu'un formateur valide une formation
 const validerFormationParFormateur = async (req, res) => {
-  try {
-    const { formationId } = req.params;
+  const { formationId } = req.params;
 
+  try {
+    // Récupérer la formation
     const formation = await Formation.findById(formationId);
+
     if (!formation) {
-      return res.status(404).json({ message: "Formation non trouvée." });
+      return res.status(404).send({ message: 'Formation non trouvée.' });
     }
 
-    formation.validerParFormateur = true;
+    // Mise à jour des champs de validation avec les valeurs valides
+    formation.validerParFormateur = true ;
+    formation.accepteParExpert = 'encours'; // Par défaut, l'expert est en attente
+    formation.accepteParAdmin = 'encours'; // Par défaut, l'admin est en attente
+
+    // Effectuer l'enregistrement de la formation avec les nouveaux statuts
     await formation.save();
 
-    res.status(200).json({ message: "Formation validée par le formateur avec succès.", formation });
+    res.status(200).send({ message: 'Formation validée avec succès.', formation });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Erreur lors de la validation de la formation." });
+    res.status(500).send({ message: 'Erreur lors de la validation de la formation.' });
   }
 };
 
+
+// Fonction pour récupérer l'état de validation par formateur
+const getEtatValidationParFormateur = async (req, res) => {
+  const { formateurId } = req.params;  // ID du formateur passé en paramètre
+
+  if (!formateurId) {
+    return res.status(400).json({ message: 'L\'ID du formateur est requis.' });
+  }
+
+  try {
+    const formations = await Formation.find({ formateur: formateurId })
+      .select('titre validerParFormateur');  // Sélectionner uniquement le titre et la validation par formateur
+
+    if (!formations || formations.length === 0) {
+      return res.status(404).json({ message: 'Aucune formation trouvée pour ce formateur.' });
+    }
+
+    // Retourner les formations avec l'état de validation
+    return res.status(200).json({ formations });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Erreur lors de la récupération des formations.' });
+  }
+};
+
+// Fonction pour récupérer les chapitres d'une formation avec l'état d'acceptation de l'expert et les commentaires
+const getChapitresAvecValidation = async (req, res) => {
+  const { formationId } = req.params;
+
+  try {
+    // Récupérer tous les chapitres associés à la formation avec leurs parties et ressources
+    const chapitres = await Chapitre.find({ formation: formationId })
+      .populate({
+        path: 'parties',
+        select: 'titre description ordre ressources',
+        options: { sort: { ordre: 1 } },
+        populate: {
+          path: 'ressources',
+          select: 'titre type url ordre',
+          options: { sort: { ordre: 1 } },
+        }
+      })
+      .exec();
+
+    if (!chapitres || chapitres.length === 0) {
+      return res.status(404).json({ message: 'Aucun chapitre trouvé pour cette formation.' });
+    }
+
+    // Vérification des URL pour chaque ressource
+    chapitres.forEach(chapitre => {
+      chapitre.parties.forEach(partie => {
+        partie.ressources.forEach(ressource => {
+          if (!ressource.url) {
+            console.warn(`Ressource sans URL trouvée : ${ressource.titre}`);
+          }
+        });
+      });
+    });
+
+    // Transformez les données des chapitres pour renvoyer uniquement ce qui est nécessaire
+    const result = chapitres.map(chapitre => ({
+      titre: chapitre.titre,
+      ordre: chapitre.ordre,
+      AcceptedParExpert: chapitre.AcceptedParExpert,
+      commentaire: chapitre.commentaire,
+      parties: chapitre.parties
+        .sort((a, b) => a.ordre - b.ordre) // Trier les parties par ordre
+        .map(partie => ({
+          titre: partie.titre,
+          description: partie.description,
+          ordre: partie.ordre, // Ajouter l'ordre des parties
+          ressources: partie.ressources
+            .sort((a, b) => a.ordre - b.ordre) // Trier les ressources par ordre
+            .map(ressource => ({
+              titre: ressource.titre,
+              type: ressource.type, // Exemple de type, à adapter selon votre schéma
+              lien: ressource.url,
+              ordre: ressource.ordre, // Ajouter l'ordre des ressources
+            })),
+        })),
+    }));
+
+    return res.status(200).json({ chapitres: result });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Erreur lors de la récupération des chapitres.' });
+  }
+};
 
 
 
@@ -408,5 +503,7 @@ module.exports = {
   getFormationsEnAttente ,
   getFormationById ,
   validerFormationParFormateur,
+  getEtatValidationParFormateur,
+  getChapitresAvecValidation,
 
 };

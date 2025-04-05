@@ -32,19 +32,19 @@ const formationSchema = new mongoose.Schema({
     default: false // Par défaut, la formation n'est pas encore validée par le formateur
   },
   accepteParExpert: {
-    type: Boolean,
-    default: false // Par défaut, la formation n'est pas encore acceptée par l'expert
+    type: String,
+    enum: ['encours', 'accepter', 'refuser'],
+    default: 'encours' // Par défaut, la décision de l'expert est "encours"
   },
-
   accepteParAdmin: {
-    type: Boolean,
-    default: false // Par défaut, la formation n'est pas encore acceptée par l'admin
+    type: String,
+    enum: ['encours', 'accepter', 'refuser'],
+    default: 'encours' // Par défaut, la décision de l'admin est "encours"
   },
   image: {
     type: String,
     required: false
   },
- 
   createdAt: {
     type: Date,
     default: Date.now
@@ -53,4 +53,4 @@ const formationSchema = new mongoose.Schema({
 
 const Formation = mongoose.model('Formation', formationSchema);
 
-module.exports = Formation; 
+module.exports = Formation;

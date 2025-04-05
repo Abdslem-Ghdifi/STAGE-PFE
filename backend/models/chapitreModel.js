@@ -9,7 +9,7 @@ const chapitreSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  
+
   formation: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Formation',
@@ -20,13 +20,14 @@ const chapitreSchema = new mongoose.Schema({
     ref: 'Partie'
   }],
   AcceptedParExpert: {
-    type: Boolean,
-    default:false
+    type: String,
+    enum: ['encours', 'accepter', 'refuser'],
+    default: 'encours'
   },
 
   commentaire: {
     type: String,
-    default :"",
+    default: "",
   },
   createdAt: {
     type: Date,
@@ -35,4 +36,4 @@ const chapitreSchema = new mongoose.Schema({
 });
 
 const Chapitre = mongoose.model('Chapitre', chapitreSchema);
-module.exports = Chapitre; // Export de la modélisation
+module.exports = Chapitre;
