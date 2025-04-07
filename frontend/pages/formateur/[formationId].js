@@ -61,7 +61,11 @@ const SuiviFormation = () => {
 
   const handleCorrection = (chapitreId) => {
     console.log(`Corriger le chapitre avec ID : ${chapitreId}`);
-    // router.push(`/corriger/${chapitreId}`);
+    if (chapitreId) {
+      router.push(`/formateur/chapitre/${chapitreId}`);
+    } else {
+      setMessage('ID du chapitre manquant');
+    }
   };
 
   return (
@@ -77,92 +81,97 @@ const SuiviFormation = () => {
             {chapitres.length === 0 ? (
               <p className="text-center text-gray-500">Aucun chapitre trouvé pour cette formation.</p>
             ) : (
-              chapitres.map((chapitre, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white p-6 shadow rounded-lg border transform transition duration-300 hover:shadow-lg hover:-translate-y-1"
-                >
-                  <h3 className="text-2xl font-semibold mb-2">{chapitre.titre}</h3>
-                  <p className="text-sm text-gray-600">Ordre : {chapitre.ordre}</p>
+              chapitres.map((chapitre, idx) => {
+                console.log(chapitre); // Log de chaque chapitre pour vérifier la structure
+                return (
+                  <div
+                    key={idx}
+                    className="bg-white p-6 shadow rounded-lg border transform transition duration-300 hover:shadow-lg hover:-translate-y-1"
+                  >
+                    <h3 className="text-2xl font-semibold mb-2">{chapitre.titre}</h3>
+                    <p className="text-sm text-gray-600">Ordre : {chapitre.ordre}</p>
 
-                  <div className="mt-6">
-                    {chapitre.parties?.length === 0 ? (
-                      <p className="text-center text-gray-500">Aucune partie pour ce chapitre.</p>
-                    ) : (
-                      chapitre.parties.map((partie, pIdx) => (
-                        <div key={pIdx} className="mt-4 border-t pt-4">
-                          <h4 className="text-xl font-semibold">
-                            {partie.titre} (Ordre: {partie.ordre})
-                          </h4>
-                          <p className="text-gray-500">{partie.description}</p>
+                    <div className="mt-6">
+                      {chapitre.parties?.length === 0 ? (
+                        <p className="text-center text-gray-500">Aucune partie pour ce chapitre.</p>
+                      ) : (
+                        chapitre.parties.map((partie, pIdx) => (
+                          <div key={pIdx} className="mt-4 border-t pt-4">
+                            <h4 className="text-xl font-semibold">
+                              {partie.titre} (Ordre: {partie.ordre})
+                            </h4>
+                            <p className="text-gray-500">{partie.description}</p>
 
-                          {partie.ressources?.length === 0 ? (
-                            <p className="text-sm text-gray-400">Aucune ressource pour cette partie.</p>
-                          ) : (
-                            <div className="mt-2">
-                              <ul className="ml-6 list-disc">
-                                {partie.ressources.map((ressource, rIdx) => (
-                                  <li key={rIdx} className="text-sm text-gray-600 mb-2">
-                                    {ressource.type === 'pdf' ? (
-                                      ressource.lien ? (
-                                        <a
-                                          href={`http://localhost:8080/${ressource.lien.replace(/^\/+/, '')}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-600 underline"
-                                        >
-                                          {ressource.titre} (PDF)
-                                        </a>
+                            {partie.ressources?.length === 0 ? (
+                              <p className="text-sm text-gray-400">Aucune ressource pour cette partie.</p>
+                            ) : (
+                              <div className="mt-2">
+                                <ul className="ml-6 list-disc">
+                                  {partie.ressources.map((ressource, rIdx) => (
+                                    <li key={rIdx} className="text-sm text-gray-600 mb-2">
+                                      {ressource.type === 'pdf' ? (
+                                        ressource.lien ? (
+                                          <a
+                                            href={`http://localhost:8080/${ressource.lien.replace(/^\/+/, '')}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 underline"
+                                          >
+                                            {ressource.titre} (PDF)
+                                          </a>
+                                        ) : (
+                                          <span className="text-red-500">Lien manquant</span>
+                                        )
+                                      ) : ressource.type === 'video' ? (
+                                        ressource.lien ? (
+                                          <div className="mt-2">
+                                            <video controls width="100%" className="rounded-lg max-w-xl">
+                                              <source
+                                                src={`http://localhost:8080/${ressource.lien.replace(/^\/+/, '')}`}
+                                                type="video/mp4"
+                                              />
+                                              Votre navigateur ne supporte pas la lecture de vidéos.
+                                            </video>
+                                          </div>
+                                        ) : (
+                                          <span className="text-red-500">Lien manquant</span>
+                                        )
                                       ) : (
-                                        <span className="text-red-500">Lien manquant</span>
-                                      )
-                                    ) : ressource.type === 'video' ? (
-                                      ressource.lien ? (
-                                        <div className="mt-2">
-                                          <video controls width="100%" className="rounded-lg max-w-xl">
-                                            <source
-                                              src={`http://localhost:8080/${ressource.lien.replace(/^\/+/, '')}`}
-                                              type="video/mp4"
-                                            />
-                                            Votre navigateur ne supporte pas la lecture de vidéos.
-                                          </video>
-                                        </div>
-                                      ) : (
-                                        <span className="text-red-500">Lien manquant</span>
-                                      )
-                                    ) : (
-                                      <span>{ressource.titre}</span>
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
+                                        <span>{ressource.titre}</span>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
 
-                  {/* Etat d'acceptation en bas */}
-                  <div className="mt-6">
-                    <p className={`font-semibold ${getAcceptanceStatusClass(chapitre.AcceptedParExpert)}`}>
-                      {chapitre.AcceptedParExpert === 'encours' && '🔄 En attente de l\'acceptation'}
-                      {chapitre.AcceptedParExpert === 'accepter' && '✅ Accepté par l\'expert'}
-                      {chapitre.AcceptedParExpert === 'refuser' && '❌ Refusé par l\'expert'}
-                    </p>
-                    <p className="mt-2 text-gray-500">{chapitre.commentaire || 'Aucun commentaire de l\'expert.'}</p>
+                    {/* Etat d'acceptation en bas */}
+                    <div className="mt-6">
+                      <p className={`font-semibold ${getAcceptanceStatusClass(chapitre.AcceptedParExpert)}`}>
+                        {chapitre.AcceptedParExpert === 'encours' && "🔄 En attente de l'acceptation"}
+                        {chapitre.AcceptedParExpert === 'accepter' && "✅ Accepté par l'expert"}
+                        {chapitre.AcceptedParExpert === 'refuser' && "❌ Refusé par l'expert"}
+                      </p>
+                      <p className="mt-2 text-gray-500">
+                        {chapitre.commentaire || "Aucun commentaire de l'expert."}
+                      </p>
 
-                    {chapitre.AcceptedParExpert === 'refuser' && (
-                      <button
-                        onClick={() => handleCorrection(chapitre._id)}
-                        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
-                      >
-                        Corriger
-                      </button>
-                    )}
+                      {chapitre.AcceptedParExpert === 'refuser' && (
+                        <button
+                          onClick={() => handleCorrection(chapitre._id)} // Utilisation de chapitre._id ici
+                          className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+                        >
+                          Corriger
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

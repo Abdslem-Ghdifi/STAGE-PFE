@@ -1,7 +1,10 @@
 const express = require('express');
 const multer = require('multer');
+const fs = require('fs');
 const router = express.Router();
 const Chapitre = require('../models/chapitreModel');
+const Partie = require('../models/partieModel');
+const Ressource = require('../models/ressourceModel');
 const {
   publierFormation,
   getFormations,
@@ -25,15 +28,14 @@ const {
 const authenticateTokenFormateur = require('../middlewares/formateurMid'); // Middleware pour le formateur
 const authenticateTokenAdmin = require('../middlewares/authenticateTokenAdmin'); // Middleware pour l'admin
 const  authenticateTokenExpert = require ('../middlewares/expertMid');
+
 // Configuration de multer pour gérer l'upload des fichiers
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Le dossier uploads doit être dans votre répertoire backend
-    cb(null, 'uploads/'); // Dossier où les fichiers seront stockés
+    cb(null, 'uploads/'); // Assure-toi que ce dossier existe
   },
   filename: (req, file, cb) => {
-    // Génère un nom de fichier unique en ajoutant un timestamp
-    cb(null, Date.now() + '-' + file.originalname); 
+    cb(null, Date.now() + '-' + file.originalname);
   },
 });
 
@@ -67,6 +69,34 @@ router.get('/chapitres/:formationId', getChapitresAvecValidation);
 
 
 
+router.put('/:chapitreId', async (req, res) => {
+  const { chapitreId } = req.params;  // Utiliser chapitreId au lieu de id
+  const { AcceptedParExpert, commentaire } = req.body;
+
+  try {
+    const chapitre = await Chapitre.findById(chapitreId);  // Utiliser chapitreId ici aussi
+    if (!chapitre) {
+      return res.status(404).json({ message: 'Chapitre non trouvé' });
+    }
+
+    // Si aucun commentaire n'est passé, mettre un commentaire par défaut
+    const commentaireFinal = commentaire || "L'expert a accepté ce chapitre.";
+
+    // Mise à jour des champs
+    chapitre.AcceptedParExpert = AcceptedParExpert;
+    chapitre.commentaire = commentaireFinal;
+
+    await chapitre.save();
+
+    res.status(200).json({ message: 'Chapitre mis à jour avec succès', chapitre });
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour du chapitre:', err);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+
+
 // Route pour récupérer l'état de validation d'une formation par le formateur
 router.get('/:formationId/validation', authenticateTokenFormateur, getEtatValidationParFormateur);
 
@@ -93,36 +123,142 @@ router.get("/profile", authenticateTokenFormateur, (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 });
-router.put('/:chapitreId', async (req, res) => {
-  const { chapitreId } = req.params;  // Utiliser chapitreId au lieu de id
-  const { AcceptedParExpert, commentaire } = req.body;
+// GET /api/chapitre/:id -> Récupère un chapitre avec ses parties et ressources
+router.get('/infoChapitre/:id', authenticateTokenFormateur,async (req, res) => {
+  const { id } = req.params;
 
   try {
-    const chapitre = await Chapitre.findById(chapitreId);  // Utiliser chapitreId ici aussi
+    const chapitre = await Chapitre.findById(id)
+      .populate({
+        path: 'parties',
+        populate: {
+          path: 'ressources',
+        },
+      });
+
     if (!chapitre) {
       return res.status(404).json({ message: 'Chapitre non trouvé' });
     }
 
-    // Si aucun commentaire n'est passé, mettre un commentaire par défaut
-    const commentaireFinal = commentaire || "L'expert a accepté ce chapitre.";
-
-    // Vérification que la valeur de AcceptedParExpert est valide
-    const validStatuses = ['encours', 'accepter', 'refuser'];
-    if (AcceptedParExpert && !validStatuses.includes(AcceptedParExpert)) {
-      return res.status(400).json({ message: 'Statut AcceptedParExpert invalide' });
-    }
-
-    // Mise à jour des champs
-    chapitre.AcceptedParExpert = AcceptedParExpert || 'encours'; // Si AcceptedParExpert n'est pas fourni, mettre 'encours'
-    chapitre.commentaire = commentaireFinal;
-
-    await chapitre.save();
-
-    res.status(200).json({ message: 'Chapitre mis à jour avec succès', chapitre });
-  } catch (err) {
-    console.error('Erreur lors de la mise à jour du chapitre:', err);
+    res.status(200).json({ chapitre });
+  } catch (error) {
+    console.error('Erreur lors de la récupération du chapitre :', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+// PATCH /api/chapitre/:id
+router.patch('/modifChapitre/:id', upload.any(), async (req, res) => {
+  console.log("Token : ", req.headers.authorization);  // Vérifier le token reçu
+  console.log("Données du corps : ", req.body);       // Vérifier les données envoyées dans le corps
+
+  const chapitreId = req.params.id;
+
+  try {
+    const { titre, ordre, parties } = JSON.parse(req.body.data); // data est un JSON stringifié contenant le corps complet
+    const files = req.files;
+
+    console.log("Titre : ", titre);  // Affichez les valeurs pour le débogage
+    console.log("Ordre : ", ordre);
+    console.log("Parties : ", parties);
+
+    // 🧩 Étape 1 : Mise à jour du chapitre
+    const chapitre = await Chapitre.findByIdAndUpdate(
+      chapitreId,
+      { titre, ordre },
+      { new: true }
+    );
+
+    if (!chapitre) return res.status(404).json({ message: 'Chapitre non trouvé' });
+
+    // 🧩 Étape 2 : Parcourir et mettre à jour les parties
+    for (const partieData of parties) {
+      let partie = await Partie.findById(partieData._id);
+
+      if (!partie) continue;
+
+      partie.titre = partieData.titre;
+      partie.ordre = partieData.ordre;
+
+      await partie.save();
+
+      // 🧩 Étape 3 : Parcourir et mettre à jour les ressources
+      for (const ressourceData of partieData.ressources) {
+        let ressource = await Ressource.findById(ressourceData._id);
+        if (!ressource) continue;
+
+        ressource.titre = ressourceData.titre;
+        ressource.ordre = ressourceData.ordre;
+        ressource.type = ressourceData.type;
+
+        // 🗂️ Gestion du nouveau fichier (PDF ou vidéo)
+        const file = files.find(f => f.originalname === ressourceData.tempFileName);
+        if (file) {
+          // Supprimer l'ancien fichier si tu veux
+          try {
+            if (fs.existsSync(ressource.url)) {
+              fs.unlinkSync(ressource.url);
+            }
+          } catch (e) {
+            console.warn("Ancien fichier non supprimé :", e.message);
+          }
+
+          ressource.url = file.path;
+        }
+
+        await ressource.save();
+      }
+    }
+
+    res.status(200).json({ message: 'Chapitre mis à jour avec succès' });
+  } catch (error) {
+    console.error("Erreur dans la mise à jour du chapitre : ", error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+// Route d'ajout de partie avec ressource
+router.post('/ajouterPartieAvecRessource', async (req, res) => {
+  try {
+    const { chapitreId, ressources } = req.body;
+    const chapitre = await Chapitre.findById(chapitreId);
+
+    // Vérifier si le chapitre existe
+    if (!chapitre) {
+      return res.status(404).json({ message: 'Chapitre non trouvé' });
+    }
+
+    // Créer une nouvelle partie
+    const nouvellePartie = new Partie({
+      titre: req.body.titre,
+      ordre: req.body.ordre,
+      chapitreId: chapitreId,
+    });
+
+    // Sauvegarder la partie
+    const partie = await nouvellePartie.save();
+
+    // Sauvegarder les ressources associées à cette partie
+    if (ressources) {
+      ressources.forEach(async (ressource) => {
+        const newRessource = new Ressource({
+          titre: ressource.titre,
+          type: ressource.type,
+          file: ressource.file, // Assurez-vous d'ajouter la logique pour gérer l'upload de fichier
+          partieId: partie._id,
+        });
+        await newRessource.save();
+      });
+    }
+
+    chapitre.parties.push(partie);
+    await chapitre.save();
+
+    res.status(200).json({ message: 'Partie et ressources ajoutées avec succès.', partie });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de l\'ajout de la partie et des ressources.' });
+  }
+});
+
+
 
 module.exports = router;

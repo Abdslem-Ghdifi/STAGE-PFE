@@ -457,6 +457,7 @@ const getChapitresAvecValidation = async (req, res) => {
 
     // Transformez les données des chapitres pour renvoyer uniquement ce qui est nécessaire
     const result = chapitres.map(chapitre => ({
+      _id: chapitre._id,
       titre: chapitre.titre,
       ordre: chapitre.ordre,
       AcceptedParExpert: chapitre.AcceptedParExpert,
@@ -485,6 +486,8 @@ const getChapitresAvecValidation = async (req, res) => {
   }
 };
 
+
+  
 
 
 module.exports = {
