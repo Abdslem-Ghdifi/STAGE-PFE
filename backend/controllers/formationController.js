@@ -6,42 +6,86 @@ const Ressource = require('../models/ressourceModel');
 const Formateur = require('../models/formateurModel');
 
 // Fonction pour publier une formation
+
+// Fonction pour publier une formation
 const publierFormation = async (req, res) => {
-  try {
-    const { titre, description, categorieId, formateurId, prix } = req.body;
-    let image = req.body.image || req.file?.path;
-
-    if (!titre || !description || !categorieId || !formateurId || !prix) {
-      return res.status(400).json({ message: "Tous les champs sont requis." });
-    }
-
-    if (!image) {
-      return res.status(400).json({ message: "Une image est requise pour la formation." });
-    }
-
-    const formation = new Formation({
-      titre,
-      description,
-      categorie: categorieId,
-      formateur: formateurId,
-      chapitres: [],
-      prix,
-      image,
-    });
-
-    const savedFormation = await formation.save();
-
-    return res.status(201).json({
-      success: true,
-      message: "Formation publiée avec succès.",
-      formation: savedFormation,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Erreur lors de la publication de la formation." });
-  }
-};
-
+    try {
+      const { titre, description, categorieId, formateurId, prix } = req.body;
+      let image = req.body.image || req.file?.path;
+  
+      console.log("Requête reçue pour publier formation :", {
+        titre, description, categorieId, formateurId, prix, image
+      });
+  
+      if (!titre || !description || !categorieId || !formateurId || !prix) {
+        return res.status(400).json({ message: "Tous les champs sont requis." });
+      }
+  
+      if (!image) {
+        return res.status(400).json({ message: "Une image est requise pour la formation." });
+      }
+  
+      // Création de la formation
+      const formation = new Formation({
+        titre,
+        description,
+        categorie: categorieId,
+        formateur: formateurId,
+        prix,
+        image,
+        chapitres: [],
+      });
+  
+      const savedFormation = await formation.save();
+      const chapitres = [];
+  
+      // Création de 5 chapitres avec ordre
+      for (let i = 1; i <= 5; i++) {
+        const chapitre = new Chapitre({
+          titre: `Chapitre ${i}`,
+          formation: savedFormation._id,
+          parties: [],
+          ordre: i,  // Ordre ajouté ici
+        });
+  
+        const savedChapitre = await chapitre.save();
+        const parties = [];
+  
+        // Création de 3 parties pour chaque chapitre avec ordre
+        for (let j = 1; j <= 3; j++) {
+          const partie = new Partie({
+            titre: `Partie ${j}`,
+            chapitre: savedChapitre._id,
+            ressources: [],
+            ordre: j,  // Ordre ajouté ici
+          });
+  
+          const savedPartie = await partie.save();
+          parties.push(savedPartie._id);
+        }
+  
+        // Mise à jour des parties du chapitre
+        savedChapitre.parties = parties;
+        await savedChapitre.save();
+  
+        chapitres.push(savedChapitre._id);
+      }
+  
+      // Mise à jour des chapitres de la formation
+      savedFormation.chapitres = chapitres;
+      await savedFormation.save();
+  
+      return res.status(201).json({
+        success: true,
+        message: "Formation publiée avec 5 chapitres et 3 parties par chapitre.",
+        formation: savedFormation,
+      });
+    } catch (error) {
+      console.error("Erreur complète :", error);
+      return res.status(500).json({ message: error.message || "Erreur serveur." });
+    }
+  };
+   
 // Fonction pour récupérer toutes les formations
 const getFormations = async (req, res) => {
   try {
@@ -487,8 +531,96 @@ const getChapitresAvecValidation = async (req, res) => {
 };
 
 
-  
+const updateChapitre = async (req, res) => {
+  try {
+    const { titre, ordre } = req.body;
+    const chapitre = await Chapitre.findByIdAndUpdate(
+      req.params.id,
+      { titre, ordre },
+      { new: true }
+    );
+    res.status(200).json({ chapitre });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
+const deleteChapitre = async (req, res) => {
+  try {
+    // Supprimer aussi toutes les parties et ressources associées
+    await Partie.deleteMany({ chapitreId: req.params.id });
+    await Chapitre.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Chapitre supprimé avec succès' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const reorderChapitres = async (req, res) => {
+  try {
+    const { chapitres } = req.body;
+    
+    const bulkOps = chapitres.map(chapitre => ({
+      updateOne: {
+        filter: { _id: chapitre._id },
+        update: { $set: { ordre: chapitre.ordre } }
+      }
+    }));
+    
+    await Chapitre.bulkWrite(bulkOps);
+    res.status(200).json({ message: 'Ordre des chapitres mis à jour' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const updatePartie = async (req, res) => {
+  try {
+    const { titre, ordre } = req.body;
+    const partie = await Partie.findByIdAndUpdate(
+      req.params.id,
+      { titre, ordre },
+      { new: true }
+    );
+    res.status(200).json({ partie });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+const deletePartie = async (req, res) => {
+  try {
+    // Supprimer aussi toutes les ressources associées
+    await Ressource.deleteMany({ partieId: req.params.id });
+    await Partie.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Partie supprimée avec succès' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+const updateRessource = async (req, res) => {
+  try {
+    const { titre, ordre, type, url } = req.body;
+    const ressource = await Ressource.findByIdAndUpdate(
+      req.params.id,
+      { titre, ordre, type, url },
+      { new: true }
+    );
+    res.status(200).json({ ressource });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const deleteRessource = async (req, res) => {
+  try {
+    // Supprimer aussi les fichiers associés si nécessaire
+    await Ressource.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Ressource supprimée avec succès' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 module.exports = {
   publierFormation,
@@ -508,5 +640,12 @@ module.exports = {
   validerFormationParFormateur,
   getEtatValidationParFormateur,
   getChapitresAvecValidation,
+  updateChapitre,
+  deleteChapitre,
+  reorderChapitres,
+  updatePartie,
+  deletePartie,
+  updateRessource,
+  deleteRessource,
 
 };

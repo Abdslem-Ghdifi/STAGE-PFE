@@ -23,6 +23,14 @@ const {
   validerFormationParFormateur,
   getEtatValidationParFormateur,
   getChapitresAvecValidation,
+
+  updateChapitre,
+    deleteChapitre,
+    reorderChapitres,
+    updatePartie,
+    deletePartie,
+    updateRessource,
+    deleteRessource,
  
 } = require('../controllers/formationController');
 const authenticateTokenFormateur = require('../middlewares/formateurMid'); // Middleware pour le formateur
@@ -259,6 +267,17 @@ router.post('/ajouterPartieAvecRessource', async (req, res) => {
   }
 });
 
+//route pour mettre a jour un chapitre 
+router.put('/chapitre/:id', authenticateTokenFormateur, updateChapitre);
+router.delete('/chapitre/:id', authenticateTokenFormateur, deleteChapitre);
+router.put('/:formationId/reorder-chapitres', authenticateTokenFormateur,reorderChapitres);
 
+//route pour mettre a jour une partie
+router.put('/partie/:id', authenticateTokenFormateur,updatePartie);
+router.delete('/partie/:id', authenticateTokenFormateur,deletePartie);
+
+//route pour mettre a jour un ressources 
+router.put('/ressource/:id', authenticateTokenFormateur,updateRessource);
+router.delete('/ressource/:id', authenticateTokenFormateur,deleteRessource);
 
 module.exports = router;
