@@ -349,15 +349,52 @@ const getRessources = async (req, res) => {
 
 const getFormationsEnAttente = async (req, res) => {
   try {
-    const formations = await Formation.find({ validerParFormateur: true })
-      .populate({
-        path: 'formateur',
-        select: 'nom prenom email profession experience image'
-      });
+    // Récupérer l'expert depuis le middleware d'authentification
+    const expert = req.expert;
+    
+    if (!expert) {
+      return res.status(401).json({ message: "Expert non authentifié" });
+    }
 
-    res.status(200).json(formations);
+    // Vérifier que l'expert a une catégorie attribuée
+    if (!expert.categorie) {
+      return res.status(400).json({ 
+        message: "Aucune catégorie attribuée à cet expert" 
+      });
+    }
+
+    // Récupérer les formations :
+    // - Validées par le formateur
+    // - De la même catégorie que l'expert
+    // - Pas encore traitées par l'expert
+    const formations = await Formation.find({ 
+      validerParFormateur: true,
+      categorie: expert.categorie,
+      accepteParExpert: 'encours'
+    })
+    .populate({
+      path: 'formateur',
+      select: 'nom prenom email profession experience image'
+    })
+    .populate({
+      path: 'categorie',
+      select: 'nom'
+    })
+    .sort({ createdAt: -1 }); // Tri par date de création décroissante
+
+    res.status(200).json({
+      success: true,
+      count: formations.length,
+      data: formations
+    });
+
   } catch (error) {
-    res.status(500).json({ message: "Erreur serveur", error });
+    console.error("Erreur:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Erreur serveur",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -622,6 +659,8 @@ const deleteRessource = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   publierFormation,
   getFormations,
@@ -647,5 +686,7 @@ module.exports = {
   deletePartie,
   updateRessource,
   deleteRessource,
-
+ 
+  
+  
 };

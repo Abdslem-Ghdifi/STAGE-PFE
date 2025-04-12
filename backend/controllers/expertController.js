@@ -30,7 +30,7 @@ const upload = multer({ storage: storage });
 // Ajout d’un expert
 const addExpert = async (req, res) => {
   try {
-    const { nom, prenom, email, motDePasse, image } = req.body;
+    const { nom, prenom, email, motDePasse, image, categorie } = req.body;
 
     if (!nom || !prenom || !email || !motDePasse) {
       return res.status(400).json({ success: false, message: "Tous les champs sont obligatoires !" });
@@ -46,7 +46,8 @@ const addExpert = async (req, res) => {
       prenom,
       email,
       motDePasse,
-      image: image || (req.file ? req.file.path : null), // Priorité à l'image envoyée via req.body
+      image: image || (req.file ? req.file.path : null),
+      categorie: categorie || null  // on peut valider que l'ID existe aussi si tu veux
     });
 
     await expert.save();
@@ -54,7 +55,14 @@ const addExpert = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Expert ajouté avec succès.",
-      expert: { id: expert._id, nom: expert.nom, prenom: expert.prenom, email: expert.email, image: expert.image },
+      expert: {
+        id: expert._id,
+        nom: expert.nom,
+        prenom: expert.prenom,
+        email: expert.email,
+        image: expert.image,
+        categorie: expert.categorie
+      },
     });
   } catch (error) {
     console.error("Erreur lors de l'ajout de l'expert :", error);

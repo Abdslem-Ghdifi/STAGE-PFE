@@ -178,6 +178,10 @@ const deleteUser = async (req, res) => {
 
 
 
-
-
-module.exports = { loginAdmin, createAdmin, getAdminProfile, logoutAdmin, deleteUser };
+module.exports = { 
+  loginAdmin,
+ createAdmin, 
+ getAdminProfile, 
+ logoutAdmin, 
+ deleteUser,
+ };

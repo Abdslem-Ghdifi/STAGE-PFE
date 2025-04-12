@@ -31,6 +31,9 @@ const {
     deletePartie,
     updateRessource,
     deleteRessource,
+   
+  
+    
  
 } = require('../controllers/formationController');
 const authenticateTokenFormateur = require('../middlewares/formateurMid'); // Middleware pour le formateur
@@ -217,7 +220,8 @@ router.patch('/modifChapitre/:id', upload.any(), async (req, res) => {
         await ressource.save();
       }
     }
-
+    chapitre.AcceptedParExpert = 'encours';
+    await chapitre.save();
     res.status(200).json({ message: 'Chapitre mis à jour avec succès' });
   } catch (error) {
     console.error("Erreur dans la mise à jour du chapitre : ", error);
@@ -259,6 +263,7 @@ router.post('/ajouterPartieAvecRessource', async (req, res) => {
     }
 
     chapitre.parties.push(partie);
+    
     await chapitre.save();
 
     res.status(200).json({ message: 'Partie et ressources ajoutées avec succès.', partie });
@@ -279,5 +284,7 @@ router.delete('/partie/:id', authenticateTokenFormateur,deletePartie);
 //route pour mettre a jour un ressources 
 router.put('/ressource/:id', authenticateTokenFormateur,updateRessource);
 router.delete('/ressource/:id', authenticateTokenFormateur,deleteRessource);
+
+
 
 module.exports = router;

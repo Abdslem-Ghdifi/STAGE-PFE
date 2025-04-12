@@ -21,9 +21,15 @@ const expertSchema = new mongoose.Schema(
       required: true,
     },
     image: {
-      type: String, // URL ou chemin vers l'image
+      type: String, 
       required: false,
     },
+    categorie: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Categorie", 
+      required: true,   
+    },
+    
   },
   {
     timestamps: true,

@@ -1,44 +1,22 @@
 {
- 
-  "scripts": {
- 
-   
-  "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
- 
-   
-  "dev:frontend": "cd frontend && npm run dev",
- 
-   
-  "dev:backend": "cd backend && npm run dev"
- 
-  },
- 
-  "devDependencies": {
- 
-   
-  "concurrently": "^9.1.2"
- 
-  },
- 
-  "dependencies": {
- 
-   
-  "cloudinary": "^2.5.1",
- 
-   
-  "framer-motion": "^12.4.5",
- 
-   
-  "react": "^18.3.1",
- 
-   
-  "react-beautiful-dnd": "^13.1.1",
- 
-   
-  "react-dom": "^18.3.1",
- 
-   
-  "react-icons": "^5.5.0"
- 
-  }
+ "scripts": {
+  "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+  "dev:frontend": "cd frontend && npm run dev",
+  "dev:backend": "cd backend && npm run dev"
+ },
+ "devDependencies": {
+  "concurrently": "^9.1.2"
+ },
+ "dependencies": {
+  "@emotion/react": "^11.14.0",
+  "@emotion/styled": "^11.14.0",
+  "@mui/material": "^7.0.2",
+  "@mui/x-charts": "^7.28.0",
+  "cloudinary": "^2.5.1",
+  "framer-motion": "^12.4.5",
+  "react": "^18.3.1",
+  "react-beautiful-dnd": "^13.1.1",
+  "react-dom": "^18.3.1",
+  "react-icons": "^5.5.0"
+ }
 }

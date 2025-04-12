@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,10 +11,36 @@ const AjouterExpert = () => {
     prenom: "",
     email: "",
     motDePasse: "",
+    categorie: "", // ajout catégorie ici
   });
+
+  const [categories, setCategories] = useState([]);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Charger les catégories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/categorie/getcategorie", {
+          withCredentials: true,
+        });
+
+        // Gestion selon la structure de réponse
+        const data = Array.isArray(response.data)
+          ? response.data
+          : response.data.categories;
+
+        setCategories(data);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des catégories :", error);
+        toast.error("Erreur lors du chargement des catégories");
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -39,6 +65,7 @@ const AjouterExpert = () => {
     else if (!emailRegex.test(formData.email)) newErrors.email = "Veuillez entrer un email valide.";
     if (!formData.motDePasse.trim()) newErrors.motDePasse = "Le mot de passe est obligatoire.";
     else if (formData.motDePasse.length < 8) newErrors.motDePasse = "Le mot de passe doit contenir au moins 8 caractères.";
+    if (!formData.categorie) newErrors.categorie = "Veuillez sélectionner une catégorie.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -86,7 +113,7 @@ const AjouterExpert = () => {
       });
 
       toast.success("Expert ajouté avec succès !");
-      setFormData({ nom: "", prenom: "", email: "", motDePasse: "" });
+      setFormData({ nom: "", prenom: "", email: "", motDePasse: "", categorie: "" });
       setFile(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Erreur lors de l'ajout de l'expert.");
@@ -119,6 +146,27 @@ const AjouterExpert = () => {
                 {errors[field] && <p className="text-red-500 text-sm mt-1">{errors[field]}</p>}
               </div>
             ))}
+
+            {/* Sélection catégorie */}
+            <div className="mb-4">
+              <label htmlFor="categorie" className="block text-sm font-medium text-gray-700">Catégorie</label>
+              <select
+                id="categorie"
+                name="categorie"
+                value={formData.categorie}
+                onChange={handleInputChange}
+                className={`w-full p-2 border ${errors.categorie ? "border-red-500" : "border-gray-300"} rounded-md`}
+              >
+                <option value="">-- Sélectionner une catégorie --</option>
+                {Array.isArray(categories) &&
+                  categories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.nom}
+                    </option>
+                  ))}
+              </select>
+              {errors.categorie && <p className="text-red-500 text-sm mt-1">{errors.categorie}</p>}
+            </div>
 
             <div className="mb-4">
               <label htmlFor="file" className="block text-sm font-medium text-gray-700">Image (optionnelle)</label>

@@ -44,10 +44,12 @@ const GererFormation = () => {
         ]);
         
         setFormation(formationData.formation);
-        setChapitres(chapitreData.chapitres);
+        // Trier les chapitres par ordre dès le chargement
+        const sortedChapitres = [...chapitreData.chapitres].sort((a, b) => a.ordre - b.ordre);
+        setChapitres(sortedChapitres);
         
         const initialExpanded = {};
-        chapitreData.chapitres.forEach(chapitre => {
+        sortedChapitres.forEach(chapitre => {
           initialExpanded[chapitre._id] = false;
         });
         setExpandedChapitres(initialExpanded);
@@ -201,71 +203,102 @@ const GererFormation = () => {
 
   const saveEdit = async () => {
     if (!editingItem) return;
-
+  
     try {
       let endpoint = '';
-      let data = {};
-
+      let payload = null;
+      let isMultipart = false;
+  
+      // Déterminer le endpoint et le type de données à envoyer
       if (editingItem.type === 'chapitre') {
         endpoint = `http://localhost:8080/api/formation/chapitre/${editingItem.id}`;
-        data = { titre: editForm.titre, ordre: editForm.ordre };
+        payload = { titre: editForm.titre, ordre: editForm.ordre };
       } else if (editingItem.type === 'partie') {
         endpoint = `http://localhost:8080/api/formation/partie/${editingItem.id}`;
-        data = { titre: editForm.titre, ordre: editForm.ordre };
+        payload = { titre: editForm.titre, ordre: editForm.ordre };
       } else if (editingItem.type === 'ressource') {
         endpoint = `http://localhost:8080/api/formation/ressource/${editingItem.id}`;
-        data = { 
-          titre: editForm.titre, 
-          ordre: editForm.ordre, 
-          type: editForm.type,
-          url: editForm.url 
-        };
+        
+        if (editForm.files && editForm.files.length > 0) {
+          isMultipart = true;
+          const formData = new FormData();
+          formData.append('titre', editForm.titre);
+          formData.append('ordre', editForm.ordre);
+          formData.append('type', editForm.type);
+          formData.append('url', editForm.url);
+          Array.from(editForm.files).forEach(file => {
+            formData.append('ressources', file);
+          });
+          payload = formData;
+        } else {
+          payload = {
+            titre: editForm.titre,
+            ordre: editForm.ordre,
+            type: editForm.type,
+            url: editForm.url,
+          };
+        }
       }
-
-      await axios.put(endpoint, data, config);
-
+  
+      // Envoyer la requête PUT avec les bons headers
+      await axios.put(endpoint, payload, isMultipart
+        ? {
+            ...config,
+            headers: {
+              ...config.headers,
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        : config
+      );
+  
+      // Mettre à jour localement les données
       const updatedChapitres = chapitres.map(chapitre => {
         if (editingItem.type === 'chapitre' && chapitre._id === editingItem.id) {
           return { ...chapitre, titre: editForm.titre, ordre: editForm.ordre };
         }
-
+  
         if (chapitre.parties) {
           const updatedParties = chapitre.parties.map(partie => {
             if (editingItem.type === 'partie' && partie._id === editingItem.id) {
               return { ...partie, titre: editForm.titre, ordre: editForm.ordre };
             }
-
+  
             if (partie.ressources) {
               const updatedRessources = partie.ressources.map(ressource => {
                 if (editingItem.type === 'ressource' && ressource._id === editingItem.id) {
-                  return { 
-                    ...ressource, 
-                    titre: editForm.titre, 
-                    ordre: editForm.ordre, 
+                  return {
+                    ...ressource,
+                    titre: editForm.titre,
+                    ordre: editForm.ordre,
                     type: editForm.type,
-                    url: editForm.url 
+                    url: editForm.url,
                   };
                 }
                 return ressource;
               });
+  
               return { ...partie, ressources: updatedRessources };
             }
-
+  
             return partie;
           });
+  
           return { ...chapitre, parties: updatedParties };
         }
-
+  
         return chapitre;
       });
-
+  
       setChapitres(updatedChapitres);
       setEditingItem(null);
       setMessage(`${editingItem.type.charAt(0).toUpperCase() + editingItem.type.slice(1)} modifié avec succès.`);
     } catch (err) {
+      console.error(err);
       setMessage(`Erreur lors de la modification du ${editingItem.type}`);
     }
   };
+  
 
   const ajouterChapitre = async (e) => {
     e.preventDefault();
@@ -492,15 +525,26 @@ const GererFormation = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">URL</label>
-                <input
-                  type="text"
-                  placeholder="URL de la ressource"
-                  className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
-                  value={editForm.url}
-                  onChange={(e) => setEditForm({...editForm, url: e.target.value})}
-                  required={editForm.type === 'lien'}
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {editForm.type === 'lien' ? 'URL' : 'Fichier'}
+                </label>
+                {editForm.type === 'lien' ? (
+                  <input
+                    type="text"
+                    placeholder="URL de la ressource"
+                    className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
+                    value={editForm.url}
+                    onChange={(e) => setEditForm({...editForm, url: e.target.value})}
+                    required
+                  />
+                ) : (
+                  <input
+                    type="file"
+                    className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    onChange={(e) => setEditForm({...editForm, files: e.target.files})}
+                    required={!editForm.url}
+                  />
+                )}
               </div>
             </>
           )}
@@ -523,6 +567,7 @@ const GererFormation = () => {
       </div>
     );
   };
+
 
   return (
     <>
