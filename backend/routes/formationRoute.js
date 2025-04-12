@@ -31,6 +31,7 @@ const {
     deletePartie,
     updateRessource,
     deleteRessource,
+    getFormationsStatistiques,
    
   
     
@@ -52,6 +53,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+
+router.get('/pub',getFormationsStatistiques);
 
 // Routes pour ajouter des éléments
 router.post('/ajouterChapitre', authenticateTokenFormateur, ajouterChapitre);

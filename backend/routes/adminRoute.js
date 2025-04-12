@@ -14,6 +14,9 @@ router.get("/profile", authenticateTokenAdmin, getAdminProfile);
 router.post("/deleteUser", authenticateTokenAdmin, deleteUser);
 router.get("/getUsers", authenticateTokenAdmin, getUsers);
 
+
+
+
 // Suppression d'un utilisateur
 router.delete("/deleteUser/:userId", authenticateTokenAdmin, async (req, res) => {
     try {

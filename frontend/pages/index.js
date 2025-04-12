@@ -4,6 +4,7 @@ import ImageSlider from "./user/components/ImageSlide";
 import CourseCard from "./user/components/coursecard";
 import Vidimg from "./user/components/vidimg";
 import InteractiveLearningPage from "./user/gifpage"
+import CategoriesPage from "./user/components/categorieFormateur"
 
 export default function HomePage() {
   return (
@@ -11,6 +12,7 @@ export default function HomePage() {
       <Header />
       <Vidimg/>
       <InteractiveLearningPage/>
+      <CategoriesPage/>
       <ImageSlider/>
       <CourseCard/>
       <Footer/>

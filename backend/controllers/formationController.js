@@ -4,6 +4,7 @@ const Chapitre = require('../models/chapitreModel');
 const Partie = require('../models/partieModel');
 const Ressource = require('../models/ressourceModel');
 const Formateur = require('../models/formateurModel');
+const Expert = require('../models/expertModel')
 
 // Fonction pour publier une formation
 
@@ -154,6 +155,7 @@ const getCategories = async (req, res) => {
     return res.status(500).json({ success: false, message: "Erreur serveur lors de la récupération des catégories." });
   }
 };
+
 
 // Fonction pour récupérer les formations d'un formateur
 const getFormationsByFormateur = async (req, res) => {
@@ -659,6 +661,36 @@ const deleteRessource = async (req, res) => {
   }
 };
 
+const getAllExperts = async (req, res) => {
+  try {
+    const experts = await Expert.find().populate('categorie', 'nom'); // Remplace 'nom' par les champs que tu veux
+    res.status(200).json(experts);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des experts :', error);
+    res.status(500).json({ message: 'Erreur serveur lors de la récupération des experts.' });
+  }
+};
+
+
+const getFormationsStatistiques = async (req, res) => {
+  try {
+      // Récupérer les formations publiées avec les informations nécessaires
+      const formations = await Formation.find({ validerParFormateur: true  })
+          .populate('categorie', 'nom')  // Pour obtenir le nom de la catégorie
+          .populate('formateur', 'nom prenom email')  // Pour obtenir les infos du formateur
+          .select('titre description categorie formateur prix accepteParExpert image');  // Sélectionner uniquement les champs nécessaires
+      
+      // Si aucune formation n'est trouvée
+      if (!formations) {
+          return res.status(404).json({ message: "Aucune formation trouvée." });
+      }
+
+      return res.json(formations);
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Erreur lors de la récupération des formations." });
+  }
+};
 
 
 module.exports = {
@@ -686,6 +718,9 @@ module.exports = {
   deletePartie,
   updateRessource,
   deleteRessource,
+  getAllExperts,
+  getFormationsStatistiques,
+ 
  
   
   

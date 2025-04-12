@@ -86,61 +86,64 @@ const AjouterCategorie = () => {
 
   return (
     <div>
-      <Header />
-      <ToastContainer position="top-right" autoClose={3000} />
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-        {/* Liste des catégories existantes */}
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl mb-8">
-          <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Catégories Existantes</h2>
-          {loadingCategories ? (
-            <p className="text-center text-gray-600">Chargement des catégories...</p>
-          ) : categories.length > 0 ? (
-            <ul className="space-y-4">
-              {categories.map((categorie) => (
-                <li key={categorie._id} className="p-4 border border-gray-300 rounded-md shadow-sm">
-                  <h3 className="font-semibold text-lg text-blue-600">{categorie.nom}</h3>
-                  <p className="text-gray-700">{categorie.description}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-center text-gray-500">Aucune catégorie disponible.</p>
-          )}
-        </div>
-
-        {/* Formulaire d'ajout de catégorie */}
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
-          <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Ajouter une Catégorie</h2>
-          <form onSubmit={handleSubmit}>
-            {["nom", "description"].map((field) => (
-              <div className="mb-4" key={field}>
-                <label htmlFor={field} className="block text-sm font-medium text-gray-700">
-                  {field === "nom" ? "Nom de la catégorie" : "Description"}
-                </label>
-                <input
-                  type="text"
-                  id={field}
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleInputChange}
-                  className={`w-full p-2 border ${errors[field] ? "border-red-500" : "border-gray-300"} rounded-md`}
-                />
-                {errors[field] && <p className="text-red-500 text-sm mt-1">{errors[field]}</p>}
-              </div>
+  <Header />
+  <ToastContainer position="top-right" autoClose={3000} />
+  <div className="min-h-screen flex flex-col bg-gray-100 p-4">
+    <div className="flex flex-row gap-6 w-full max-w-6xl mx-auto mt-6">
+      {/* Liste des catégories existantes - 1/3 de la page */}
+      <div className="w-1/3 bg-white p-6 rounded-lg shadow-lg h-fit">
+        <h2 className="text-xl font-bold text-center mb-4 text-gray-800">Catégories Existantes</h2>
+        {loadingCategories ? (
+          <p className="text-center text-gray-600">Chargement des catégories...</p>
+        ) : categories.length > 0 ? (
+          <ul className="space-y-4">
+            {categories.map((categorie) => (
+              <li key={categorie._id} className="p-3 border border-gray-300 rounded-md shadow-sm">
+                <h3 className="font-semibold text-blue-600">{categorie.nom}</h3>
+                <p className="text-gray-700 text-sm">{categorie.description}</p>
+              </li>
             ))}
-
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition-all disabled:bg-gray-400"
-              disabled={loading}
-            >
-              {loading ? "Enregistrement..." : "Ajouter Catégorie"}
-            </button>
-          </form>
-        </div>
+          </ul>
+        ) : (
+          <p className="text-center text-gray-500">Aucune catégorie disponible.</p>
+        )}
       </div>
-      <Footer />
+
+      {/* Formulaire d'ajout de catégorie - 2/3 de la page */}
+      <div className="w-2/3 bg-white p-8 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Ajouter une Catégorie</h2>
+        <form onSubmit={handleSubmit}>
+          {["nom", "description"].map((field) => (
+            <div className="mb-4" key={field}>
+              <label htmlFor={field} className="block text-sm font-medium text-gray-700">
+                {field === "nom" ? "Nom de la catégorie" : "Description"}
+              </label>
+              <input
+                type="text"
+                id={field}
+                name={field}
+                value={formData[field]}
+                onChange={handleInputChange}
+                className={`w-full p-2 border ${errors[field] ? "border-red-500" : "border-gray-300"} rounded-md`}
+              />
+              {errors[field] && <p className="text-red-500 text-sm mt-1">{errors[field]}</p>}
+            </div>
+          ))}
+
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition-all disabled:bg-gray-400"
+            disabled={loading}
+          >
+            {loading ? "Enregistrement..." : "Ajouter Catégorie"}
+          </button>
+        </form>
+      </div>
     </div>
+  </div>
+  <Footer />
+</div>
+
   );
 };
 

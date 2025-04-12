@@ -153,8 +153,8 @@ export default function InteractiveLearningPage() {
               "ScreenLearning a révolutionné notre approche de la formation en entreprise. Les résultats en termes d'engagement et de rétention sont exceptionnels."
             </p>
             <div className="font-medium">
-              <p>Marie Dubois</p>
-              <p className="text-blue-200">Directrice RH, TechCorp</p>
+              <p>Med Rayen Chaabi & Abdslem Ghdifi</p>
+              <p className="text-blue-200">Directeurs, ScreenLearning</p>
             </div>
           </div>
         </div>

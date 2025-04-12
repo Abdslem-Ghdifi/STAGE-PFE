@@ -1,250 +1,171 @@
-'use client'; // Important for Next.js 13+ with MUI
-
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import Cookies from 'js-cookie';
-import { useRouter } from 'next/navigation';
-import { 
-  BarChart, 
-  PieChart 
-} from '@mui/x-charts';
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Grid, 
-  Divider, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  CircularProgress, 
-  Button,
-  Box
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+  Typography,
+  Container,
+  Chip,
+  Tooltip,
+  Box,
+  Avatar
 } from '@mui/material';
+import {
+  CheckCircle as CheckCircleIcon,
+  Pending as PendingIcon,
+  Cancel as CancelIcon,
+  Help as HelpIcon
+} from '@mui/icons-material';
 
-const AdminDashboard = () => {
-  const [stats, setStats] = useState(null);
+const FormationsAdmin = () => {
+  const [formations, setFormations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const router = useRouter();
+  const [error, setError] = useState('');
+
+  const fetchFormations = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/formation/pub', {
+        withCredentials: true
+      });
+      setFormations(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erreur lors de la récupération des formations.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const token = Cookies.get('adminToken');
+    fetchFormations();
+  }, []);
 
-    if (typeof window !== 'undefined' && !token) {
-      router.push('/admin/login');
-      return;
+  const getStatusDetails = (status) => {
+    switch (status) {
+      case 'accepter':
+        return {
+          label: 'Accepté',
+          color: 'success',
+          icon: <CheckCircleIcon fontSize="small" />
+        };
+      case 'refuser':
+        return {
+          label: 'Refusé',
+          color: 'error',
+          icon: <CancelIcon fontSize="small" />
+        };
+      case 'encours':
+        return {
+          label: 'En cours',
+          color: 'warning',
+          icon: <PendingIcon fontSize="small" />
+        };
+      default:
+        return {
+          label: 'Statut inconnu',
+          color: 'default',
+          icon: <HelpIcon fontSize="small" />
+        };
     }
-
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('http://localhost:8080/api/formation/stats', {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          withCredentials: true,
-        });
-
-        if (!response.data?.success) {
-          throw new Error(response.data?.message || 'Invalid server response');
-        }
-
-        setStats(response.data.data);
-        setError(null);
-      } catch (err) {
-        console.error('API Error:', err);
-        
-        if (err.response?.status === 401 || err.message?.includes('token')) {
-          Cookies.remove('adminToken');
-          router.push('/admin/login');
-          return;
-        }
-
-        setError(err.response?.data?.message || err.message || 'Failed to load data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (token) {
-      fetchStats();
-    }
-  }, [router]);
+  };
 
   if (loading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '70vh' 
-      }}>
-        <CircularProgress size={60} />
-      </Box>
+      <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Container>
     );
   }
 
   if (error) {
     return (
-      <Box sx={{ p: 4, textAlign: 'center' }}>
-        <Box sx={{ 
-          bgcolor: 'error.light',
-          borderLeft: 4,
-          borderColor: 'error.main',
-          color: 'error.dark',
-          p: 2,
-          mb: 2
-        }}>
-          <Typography variant="h6">{error}</Typography>
-        </Box>
-        <Button 
-          variant="contained" 
-          color="primary"
-          onClick={() => window.location.reload()}
-          sx={{ mt: 2 }}
-        >
-          Try Again
-        </Button>
-      </Box>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Typography color="error" variant="h6" gutterBottom>
+          Erreur : {error}
+        </Typography>
+      </Container>
     );
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-        Admin Dashboard
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
+        Gestion des Formations
       </Typography>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Total Courses
-              </Typography>
-              <Typography variant="h3">
-                {stats?.totalFormations || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Average Price
-              </Typography>
-              <Typography variant="h3">
-                {stats?.moyennePrix ? stats.moyennePrix.toFixed(2) : '0.00'} €
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Pending Approval
-              </Typography>
-              <Typography variant="h3">
-                {stats?.formationsParStatut?.encours || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Course Status
-              </Typography>
-              <BarChart
-                series={[
-                  {
-                    data: [
-                      stats?.formationsParStatut?.encours || 0,
-                      stats?.formationsParStatut?.acceptees || 0,
-                      stats?.formationsParStatut?.refusees || 0
-                    ]
-                  }
-                ]}
-                height={300}
-                xAxis={[
-                  {
-                    scaleType: 'band',
-                    data: ['Pending', 'Approved', 'Rejected']
-                  }
-                ]}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Categories Distribution
-              </Typography>
-              <PieChart
-                series={[
-                  {
-                    data: Object.entries(stats?.categories || {}).map(([label, value]) => ({
-                      id: label,
-                      value,
-                      label
-                    }))
-                  }
-                ]}
-                height={300}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Card sx={{ mt: 4 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Recent Courses
-          </Typography>
-          <List>
-            {stats?.dernieresFormations?.length > 0 ? (
-              stats.dernieresFormations.map((formation, index) => (
-                <div key={index}>
-                  <ListItem>
-                    <ListItemText
-                      primary={formation.titre}
-                      secondary={
-                        <>
-                          <span style={{ marginRight: '0.5rem' }}>{formation.categorie || 'Uncategorized'}</span>
-                          <span style={{ marginRight: '0.5rem' }}>| {formation.formateur || 'Unknown instructor'}</span>
-                          <span style={{ marginRight: '0.5rem' }}>| {formation.prix} €</span>
-                          <span>| Status: {formation.statut}</span>
-                        </>
-                      }
+      <TableContainer component={Paper} elevation={3}>
+        <Table sx={{ minWidth: 650 }} aria-label="tableau des formations">
+          <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold' }}>Image</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Titre</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Catégorie</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Formateur</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Prix</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Statut</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {formations.map((formation) => {
+              const status = getStatusDetails(formation.accepteParExpert);
+              return (
+                <TableRow
+                  key={formation._id}
+                  hover
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                >
+                  <TableCell>
+                    <Avatar
+                      variant="rounded"
+                      src={formation.image}
+                      alt={formation.titre}
+                      sx={{ width: 56, height: 56 }}
                     />
-                  </ListItem>
-                  {index < stats.dernieresFormations.length - 1 && <Divider />}
-                </div>
-              ))
-            ) : (
-              <ListItem>
-                <ListItemText primary="No recent courses available" />
-              </ListItem>
-            )}
-          </List>
-        </CardContent>
-      </Card>
-    </Box>
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 'medium' }}>{formation.titre}</TableCell>
+                  <TableCell>
+                    <Tooltip title={formation.description}>
+                      <Box sx={{ 
+                        maxWidth: 200, 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis' 
+                      }}>
+                        {formation.description}
+                      </Box>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell>{formation.categorie?.nom || 'Non spécifiée'}</TableCell>
+                  <TableCell>
+                    {formation.formateur
+                      ? `${formation.formateur.nom} ${formation.formateur.prenom}`
+                      : 'Non attribué'}
+                  </TableCell>
+                  <TableCell>{formation.prix} TND</TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={status.icon}
+                      label={status.label}
+                      color={status.color}
+                      variant="outlined"
+                      size="small"
+                      sx={{ minWidth: 100 }}
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
   );
 };
 
-export default AdminDashboard;
+export default FormationsAdmin;
