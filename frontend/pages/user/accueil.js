@@ -2,7 +2,7 @@ import Headerh from "./components/headerh";
 import Footer from "./components/footer";
 import Vidimg from "./components/vidimg";
 import ImageSlider from "./components/ImageSlide";
-import CoursCardH from "./components/courscardh";
+import CoursCard from "./components/coursecard";
 import InteractiveLearningPage from "./gifpage"
 import CategoriesPage from "./components/categorieFormateur"
 
@@ -15,7 +15,7 @@ export default function Accueil() {
       <InteractiveLearningPage/>
       <CategoriesPage/>
       <ImageSlider/>
-      <CoursCardH/>
+      <CoursCard/>
       <Footer/>
     </div>
   );

@@ -1,143 +1,169 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import Head from 'next/head';
+import Link from 'next/link';
 
-function CourseCard() {
-  const courses = [
-    {
-      title: "Programmation Python",
-      description:
-        "Apprenez les bases de la programmation Python et construisez votre première application web.",
-      image: "/images/python.jpg",
-    },
-    {
-      title: "JavaScript",
-      description:
-        "Donnez vie à vos applications web avec JavaScript. Créez des interfaces utilisateur interactives et des expériences web dynamiques.",
-      image: "/images/js.png",
-    },
-    {
-      title: "SQL",
-      description:
-        "Libérez le pouvoir des données avec SQL. Apprenez à interroger, manipuler et analyser de grandes bases de données.",
-      image: "/images/sql.jpg",
-    },
-    {
-      title: "PHP",
-      description:
-        "Maîtrisez PHP pour créer des sites web dynamiques et personnalisés. Apprenez à gérer des bases de données et à sécuriser vos applications.",
-      image: "/images/php.jpg",
-    },
-    {
-      title: "Java",
-      description:
-        "Maîtrisez le langage de programmation le plus utilisé au monde. Explorez les concepts fondamentaux de la programmation orientée objet avec Java.",
-      image: "/images/java.png",
-    },
-    {
-      title: "Django",
-      description:
-        "Développez des sites web rapidement et efficacement avec Django. Apprenez à créer des modèles, des vues et des URL pour construire des applications web complètes.",
-      image: "/images/django.png",
-    },
-  ];
-
-  const [showLogin, setShowLogin] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '' });
+const FormationsPage = () => {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.post('http://localhost:8080/api/users/login', formData);
-      if (response.status === 200) {
-        alert('Connexion réussie !');
-        setShowLogin(false);
+  useEffect(() => {
+    const fetchFormations = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/formation/getFormationPub");
+        const groupedData = groupByCategory(response.data);
+        setCategories(groupedData);
+      } catch (err) {
+        setError(err.response?.data?.message || "Erreur lors du chargement des formations");
+        console.error("Erreur API:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.response?.data?.error || 'Erreur lors de la connexion');
-    } finally {
-      setLoading(false);
-    }
+    };
+    fetchFormations();
+  }, []);
+
+  const groupByCategory = (formations) => {
+    return formations.reduce((acc, item) => {
+      const catId = item.categorie?._id || 'uncategorized';
+      if (!acc[catId]) {
+        acc[catId] = {
+          categorie: item.categorie || { nom: "Non catégorisé", _id: 'uncategorized' },
+          formations: [],
+        };
+      }
+      item.formations.forEach((formation) => {
+        acc[catId].formations.push({
+          ...formation,
+          formateur: formation.formateur || {
+            nom: "Anonyme",
+            prenom: "",
+            image: "/default-avatar.png",
+          },
+        });
+      });
+      return acc;
+    }, {});
   };
+
+  const handleImageError = (e, isFormateur = false) => {
+    const target = e.target;
+    target.src = isFormateur ? '/default-avatar.png' : '/default-formation.jpg';
+    target.onerror = null;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-md text-center">
+          <p className="font-bold">Erreur</p>
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-sm"
+          >
+            Réessayer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-12 text-center">
-      <h1 className="text-4xl font-bold text-[#001F3F] mb-6">Nos Cours</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {courses.map((course) => (
-          <div key={course.title} className="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition duration-300">
-            <img src={course.image} alt={course.title} className="rounded-lg w-32 h-30 mx-auto object-cover" />
-            <h2 className="text-xl font-semibold mt-4">{course.title}</h2>
-            <p className="text-gray-700 mt-2">{course.description}</p>
-            <button
-              onClick={() => setShowLogin(true)}
-              className="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded mt-4 transition duration-300"
-            >
-              Commencer l'apprentissage
-            </button>
-          </div>
-        ))}
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <Head>
+        <title>Catalogue des Formations</title>
+        <meta name="description" content="Découvrez toutes nos formations disponibles" />
+      </Head>
 
-      {showLogin && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-[400px]">
-            <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
-            {error && <div className="text-red-500 mb-4 text-center">{error}</div>}
-            <form onSubmit={handleLoginSubmit}>
-              <div className="mb-4">
-                <label htmlFor="email" className="block text-gray-700 font-medium mb-2">Adresse e-mail</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Entrez votre e-mail"
-                />
-              </div>
-              <div className="mb-4">
-                <label htmlFor="password" className="block text-gray-700 font-medium mb-2">Mot de passe</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Entrez votre mot de passe"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded"
-                disabled={loading}
-              >
-                {loading ? 'Chargement...' : 'Se connecter'}
-              </button>
-            </form>
-            <button
-              onClick={() => setShowLogin(false)}
-              className="mt-4 w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded"
-            >
-              Annuler
-            </button>
+      <main className="container mx-auto px-4 py-8">
+        <header className="text-center mb-12">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Explorez Nos Formations</h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Découvrez notre catalogue complet de formations professionnelles
+          </p>
+        </header>
+
+        {Object.keys(categories).length === 0 ? (
+          <div className="text-center py-16">
+            <div className="mx-auto w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Aucune formation disponible</h3>
+            <p className="text-gray-500">Revenez plus tard pour découvrir nos nouvelles formations</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="space-y-12">
+            {Object.values(categories).map((category) => (
+              <section key={category.categorie._id}>
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2 flex items-center">
+                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                  {category.categorie.nom}
+                </h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {category.formations.map((formation) => (
+                    <div key={formation._id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden flex flex-col text-sm">
+                      <div className="relative h-36 overflow-hidden">
+                        <img
+                          src={formation.image}
+                          alt={`Image de ${formation.titre}`}
+                          className="w-[120px] h-[120px] rounded-full mx-auto mb-3 object-cover hover:scale-105 transition-transform duration-300"
+                          onError={(e) => handleImageError(e)}
+                        />
+                      </div>
+
+                      <div className="p-3 flex-grow flex flex-col">
+                        <div className="flex items-center mb-2">
+                          <img
+                            src={formation.formateur.image}
+                            alt={`${formation.formateur.prenom} ${formation.formateur.nom}`}
+                            className="w-6 h-6 rounded-full mr-2 object-cover"
+                            onError={(e) => handleImageError(e, true)}
+                          />
+                          <span className="text-gray-600 truncate">
+                            {formation.formateur.prenom} {formation.formateur.nom}
+                          </span>
+                        </div>
+
+                        <h3 className="font-bold text-gray-800 text-base truncate">{formation.titre}</h3>
+                        <p className="text-gray-600 text-xs mb-3 line-clamp-2 flex-grow">
+                          {formation.description}
+                        </p>
+
+                        <div className="flex items-center justify-between mt-auto">
+                          <span className="font-bold text-blue-600 text-sm">
+                            {formation.prix > 0 ? `${formation.prix} DT` : 'Gratuit'}
+                          </span>
+                          <Link
+                            href={`/formations/${formation._id}`}
+                            className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition"
+                          >
+                            Détails
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
-}
+};
 
-export default CourseCard;
+export default FormationsPage;

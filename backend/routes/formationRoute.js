@@ -34,6 +34,7 @@ const {
     getFormationsStatistiques,
     accepterFormationParAdmin,
     refuserFormationParAdmin,
+    getFormationsPub,
     
   
     
@@ -55,7 +56,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-
+router.get('/getFormationPub',getFormationsPub);
 router.get('/pub',authenticateTokenAdmin,getFormationsStatistiques);
 
 // Routes pour ajouter des éléments

@@ -760,6 +760,55 @@ const refuserFormationParAdmin = async (req, res) => {
   }
 };
 
+
+const getFormationsPub = async (req, res) => {
+  try {
+    // Récupérer les formations publiées avec les informations nécessaires
+    const formations = await Formation.find({ accepteParAdmin: 'accepter' })
+      .populate('categorie', 'nom _id')  // Ajout de _id pour la catégorie
+      .populate('formateur', 'nom prenom image')
+      .select('titre description categorie formateur prix image');
+
+    // Si aucune formation n'est trouvée
+    if (!formations || formations.length === 0) {
+      return res.status(404).json({ message: "Aucune formation trouvée." });
+    }
+
+    // Grouper les formations par catégorie
+    const formationsParCategorie = formations.reduce((acc, formation) => {
+      const categorieId = formation.categorie._id.toString();
+      
+      if (!acc[categorieId]) {
+        acc[categorieId] = {
+          categorie: {
+            _id: formation.categorie._id,
+            nom: formation.categorie.nom
+          },
+          formations: []
+        };
+      }
+      
+      acc[categorieId].formations.push({
+        _id: formation._id,
+        titre: formation.titre,
+        description: formation.description,
+        formateur: formation.formateur,
+        prix: formation.prix,
+        image: formation.image
+      });
+
+      return acc;
+    }, {});
+
+    // Convertir l'objet en tableau pour le frontend
+    const result = Object.values(formationsParCategorie);
+
+    return res.json(result);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Erreur lors de la récupération des formations." });
+  }
+};
 module.exports = {
   publierFormation,
   getFormations,
@@ -789,6 +838,7 @@ module.exports = {
   getFormationsStatistiques,
   accepterFormationParAdmin,
   refuserFormationParAdmin,
+  getFormationsPub,
   
   
 };
