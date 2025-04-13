@@ -78,6 +78,16 @@ const Header = () => {
       {/* Navigation */}
       <div className="flex items-center space-x-6">
         {/* Utilisateurs avec menu déroulant */}
+
+        <Link href="/admin/statFormation" className="relative hover:text-blue-300 transition duration-300">
+          <span className="font-medium">Formations</span>
+        </Link>
+
+        <Link href="/admin/categorie" className="relative hover:text-blue-300 transition duration-300">
+          <span className="font-medium">Categorie</span>
+        </Link>
+
+
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -88,6 +98,7 @@ const Header = () => {
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
+          
           {dropdownOpen && (
             <div className="absolute left-0 mt-2 w-40 bg-white text-gray-800 shadow-lg rounded-md z-50">
               <Link href="/admin/users" className="block px-4 py-2 hover:bg-gray-100">Apprenant</Link>
@@ -105,9 +116,7 @@ const Header = () => {
           )}
         </Link>
 
-        <Link href="/admin/categorie" className="relative hover:text-blue-300 transition duration-300">
-          <span className="font-medium">Categorie</span>
-        </Link>
+        
 
         {/* Profil Admin */}
         <div className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition duration-300">

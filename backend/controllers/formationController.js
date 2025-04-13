@@ -466,8 +466,8 @@ const validerFormationParFormateur = async (req, res) => {
 
     // Mise à jour des champs de validation avec les valeurs valides
     formation.validerParFormateur = true ;
-    formation.accepteParExpert = 'encours'; // Par défaut, l'expert est en attente
-    formation.accepteParAdmin = 'encours'; // Par défaut, l'admin est en attente
+    formation.accepteParExpert = 'encours'; 
+    formation.accepteParAdmin = 'encours';
 
     // Effectuer l'enregistrement de la formation avec les nouveaux statuts
     await formation.save();
@@ -678,7 +678,7 @@ const getFormationsStatistiques = async (req, res) => {
       const formations = await Formation.find({ validerParFormateur: true  })
           .populate('categorie', 'nom')  // Pour obtenir le nom de la catégorie
           .populate('formateur', 'nom prenom email')  // Pour obtenir les infos du formateur
-          .select('titre description categorie formateur prix accepteParExpert image');  // Sélectionner uniquement les champs nécessaires
+          .select('titre description categorie formateur prix accepteParExpert accepteParAdmin image');  // Sélectionner uniquement les champs nécessaires
       
       // Si aucune formation n'est trouvée
       if (!formations) {
@@ -692,6 +692,73 @@ const getFormationsStatistiques = async (req, res) => {
   }
 };
 
+
+const accepterFormationParAdmin = async (req, res) => {
+  const { formationId } = req.params;
+
+  try {
+    
+    const formation = await Formation.findById(formationId);
+
+    if (!formation) {
+      return res.status(404).send({ message: 'Formation non trouvée.' });
+    }
+
+    
+    if (formation.accepteParExpert !== 'accepter') {
+      return res.status(400).send({ message: 'La formation doit d\'abord être acceptée par un expert.' });
+    }
+
+    // Mise à jour du statut admin
+    formation.accepteParAdmin = 'accepter';
+    formation.dateValidationAdmin = new Date();
+
+    await formation.save();
+
+    res.status(200).send({ 
+      message: 'Formation publiée avec succès.', 
+      formation 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Erreur lors de la publication de la formation.' });
+  }
+};
+
+
+const refuserFormationParAdmin = async (req, res) => {
+  const { formationId } = req.params;
+  const { motifRefus } = req.body; // Optionnel: ajouter un motif de refus
+
+  try {
+    
+    const formation = await Formation.findById(formationId);
+
+    if (!formation) {
+      return res.status(404).send({ message: 'Formation non trouvée.' });
+    }
+
+    
+    if (formation.accepteParExpert !== 'accepter') {
+      return res.status(400).send({ message: 'La formation doit d\'abord être acceptée par un expert.' });
+    }
+
+   
+    formation.accepteParAdmin = 'refuser';
+    formation.motifRefusAdmin = motifRefus; // Stocker le motif si fourni
+    formation.dateValidationAdmin = new Date();
+
+    await formation.save();
+
+    res.status(200).send({ 
+      message: 'Formation refusée avec succès.', 
+      formation 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Erreur lors du refus de la formation.' });
+  }
+};
 
 module.exports = {
   publierFormation,
@@ -720,8 +787,8 @@ module.exports = {
   deleteRessource,
   getAllExperts,
   getFormationsStatistiques,
- 
- 
+  accepterFormationParAdmin,
+  refuserFormationParAdmin,
   
   
 };

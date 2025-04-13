@@ -32,7 +32,9 @@ const {
     updateRessource,
     deleteRessource,
     getFormationsStatistiques,
-   
+    accepterFormationParAdmin,
+    refuserFormationParAdmin,
+    
   
     
  
@@ -54,7 +56,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-router.get('/pub',getFormationsStatistiques);
+router.get('/pub',authenticateTokenAdmin,getFormationsStatistiques);
 
 // Routes pour ajouter des éléments
 router.post('/ajouterChapitre', authenticateTokenFormateur, ajouterChapitre);
@@ -288,6 +290,14 @@ router.delete('/partie/:id', authenticateTokenFormateur,deletePartie);
 router.put('/ressource/:id', authenticateTokenFormateur,updateRessource);
 router.delete('/ressource/:id', authenticateTokenFormateur,deleteRessource);
 
+
+
+
+
+
+// routes pour gerer une formation par l'admin
+router.put('/:formationId/admin/accept',authenticateTokenAdmin, accepterFormationParAdmin);
+router.put('/:formationId/admin/reject',authenticateTokenAdmin, refuserFormationParAdmin);
 
 
 module.exports = router;
