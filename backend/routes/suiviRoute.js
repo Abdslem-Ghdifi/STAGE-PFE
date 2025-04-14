@@ -6,6 +6,7 @@ const {
     getPanier,
     addPanier,
     removeFromPanier,
+    payerPanier,
 
 } = require("../controllers/suiviController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
@@ -20,6 +21,9 @@ router.post('/add', authenticateToken,addPanier);
 
 //router pour supprimer une formation dans panier 
 router.post('/remove/:formationId',authenticateToken, removeFromPanier);
+
+//router pour payer panier
+router.post('/payer',authenticateToken, payerPanier);
 
 
 module.exports = router;

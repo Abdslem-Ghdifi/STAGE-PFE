@@ -11,7 +11,8 @@ const getPanier = async (req, res) => {
       console.log('Récupération du panier pour l’utilisateur avec ID :', userId);  // Log pour déboguer
   
       // Récupérer le panier de l'utilisateur
-      const panier = await Panier.findOne({ apprenant: userId })
+      const panier = await Panier.findOne({ apprenant: userId})
+        
         .populate('formations.formation')  // On "populate" pour récupérer les détails des formations
         .exec();
   
@@ -117,9 +118,62 @@ const removeFromPanier = async (req, res) => {
     }
   };  
 
+  // Fonction pour payer le panier
+const payerPanier = async (req, res) => {
+  const userId = req.user.id;
+  
+
+  try {
+      // 1. Vérifier que l'utilisateur a un panier
+      const panier = await Panier.findOne({ apprenant: userId });
+      
+      if (!panier) {
+          return res.status(404).json({ message: 'Panier non trouvé' });
+      }
+
+      // 2. Vérifier que le panier n'est pas déjà payé
+      if (panier.estPaye) {
+          return res.status(400).json({ message: 'Ce panier a déjà été payé' });
+      }
+
+      // 3. Vérifier que le panier n'est pas vide
+      if (panier.formations.length === 0) {
+          return res.status(400).json({ message: 'Le panier est vide' });
+      }
+
+      // 4. Mettre à jour le panier avec les infos de paiement
+      panier.estPaye = true;
+      panier.datePaiement = new Date();
+      panier.referencePaiement = `PAY-${Date.now()}`;
+
+      // 5. Sauvegarder le panier
+      await panier.save();
+
+      // 6. Répondre avec succès
+      return res.status(200).json({ 
+          message: 'Paiement effectué avec succès',
+          panier: {
+              _id: panier._id,
+              total: panier.total,
+              datePaiement: panier.datePaiement,
+              referencePaiement: panier.referencePaiement
+          }
+      });
+
+  } catch (error) {
+      console.error('Erreur lors du paiement du panier:', error);
+      return res.status(500).json({ 
+          message: 'Erreur serveur lors du paiement du panier',
+          error: error.message 
+      });
+  }
+};
+
 
   module.exports = { 
     getPanier,
     addPanier,
     removeFromPanier,
+    payerPanier,
+
    };
