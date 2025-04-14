@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
 import Headerh from './components/headerh';
 import Footer from './components/footer';
 
@@ -16,34 +17,30 @@ const PanierPage = () => {
   const [total, setTotal] = useState(0);
   const router = useRouter();
 
-  // Configuration d'Axios avec intercepteur pour le token
-  const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
-  });
+  const token = Cookies.get('token');
 
-  api.interceptors.request.use((config) => {
-    const token = Cookies.get('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
-
-  // Récupération du panier
+  // Fetch panier avec POST et headers
   const fetchCart = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const response = await api.get('/suivi/panier');
+      const response = await axios.post(
+        'http://localhost:8080/api/suivi/panier',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       const panierData = response.data;
-      
-      // Transformation des données pour correspondre à la structure attendue
       const formations = panierData.formations?.map(item => ({
         ...item.formation,
-        prix: item.prix // Utiliser le prix du panier au cas où
+        prix: item.prix || 0,
       })) || [];
-      
+
       setCartItems(formations);
       calculateTotal(formations);
     } catch (err) {
@@ -60,14 +57,12 @@ const PanierPage = () => {
     }
   };
 
-  // Calcul du total
   const calculateTotal = (items) => {
     const sum = items.reduce((acc, item) => acc + (item.prix || 0), 0);
     setTotal(sum);
   };
 
   useEffect(() => {
-    const token = Cookies.get('token');
     if (!token) {
       toast.error('Veuillez vous connecter pour accéder à votre panier');
       router.push('/user/connexion');
@@ -76,18 +71,18 @@ const PanierPage = () => {
     fetchCart();
   }, []);
 
-  // Suppression d'un élément du panier
   const removeFromCart = async (formationId) => {
     try {
-      await api.delete(`/suivi/remove/${formationId}`);
+      await axios.post(`http://localhost:8080/api/suivi/remove/${formationId}`,{}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Formation retirée du panier');
-      fetchCart(); // Rafraîchir le panier
+      fetchCart();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur lors de la suppression');
     }
   };
 
-  // Passage à la commande
   const proceedToCheckout = () => {
     if (cartItems.length === 0) {
       toast.warning('Votre panier est vide');
@@ -145,19 +140,6 @@ const PanierPage = () => {
 
           {cartItems.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
               <h2 className="mt-4 text-lg font-medium text-gray-900">Votre panier est vide</h2>
               <p className="mt-1 text-gray-500">
                 Commencez par ajouter des formations à votre panier
@@ -182,12 +164,9 @@ const PanierPage = () => {
                               src={item.image || '/default-formation.jpg'}
                               alt={item.titre}
                               className="h-full w-full object-cover"
-                              onError={(e) => {
-                                e.target.src = '/default-formation.jpg';
-                              }}
+                              onError={(e) => { e.target.src = '/default-formation.jpg'; }}
                             />
                           </div>
-
                           <div className="ml-4 flex-grow">
                             <div className="flex items-center justify-between">
                               <h3 className="text-lg font-medium text-gray-800">{item.titre}</h3>
@@ -195,30 +174,14 @@ const PanierPage = () => {
                                 {item.prix > 0 ? `${item.prix} DT` : 'Gratuit'}
                               </p>
                             </div>
-
                             <p className="mt-1 text-sm text-gray-500 line-clamp-2">
                               {item.description}
                             </p>
-
                             <div className="mt-4 flex items-center justify-between">
                               <button
                                 onClick={() => removeFromCart(item._id)}
                                 className="text-sm font-medium text-red-600 hover:text-red-500 flex items-center"
                               >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-5 w-5 mr-1"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                  />
-                                </svg>
                                 Supprimer
                               </button>
                             </div>
@@ -233,7 +196,6 @@ const PanierPage = () => {
               <div>
                 <div className="bg-white shadow rounded-lg p-6 sticky top-4">
                   <h2 className="text-lg font-medium text-gray-900 mb-4">Récapitulatif</h2>
-
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Sous-total ({cartItems.length} articles)</span>

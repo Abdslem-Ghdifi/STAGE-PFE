@@ -1,15 +1,12 @@
 const Panier = require('../models/panierModel');
 const Formation = require('../models/formationModel');
 const User = require('../models/userModel');
+const jwt = require('jsonwebtoken');
 
 const getPanier = async (req, res) => {
     try {
-      // Vérification si l'utilisateur est authentifié
-      if (!req.user || !req.user._id) {
-        return res.status(401).json({ message: 'Utilisateur non authentifié' });
-      }
-  
-      const userId = req.user._id;  // L'ID de l'utilisateur est supposé être stocké dans req.user
+     
+        const userId = req.user.id; // L'ID de l'utilisateur est supposé être stocké dans req.user
   
       console.log('Récupération du panier pour l’utilisateur avec ID :', userId);  // Log pour déboguer
   
@@ -82,11 +79,47 @@ const addPanier = async (req, res) => {
       return res.status(500).json({ message: 'Erreur serveur lors de l’ajout au panier' });
     }
   };
+
+
+
+// Supprimer une formation du panier
+const removeFromPanier = async (req, res) => {
+    const userId = req.user.id; // cohérent avec addPanier et getPanier
+    const { formationId } = req.params;
   
+    try {
+      if (!formationId) {
+        return res.status(400).json({ message: 'ID formation requis' });
+      }
+  
+      const panier = await Panier.findOne({ apprenant: userId });
+      if (!panier) {
+        return res.status(404).json({ message: 'Panier introuvable' });
+      }
+  
+      // Supprimer la formation du tableau
+      const formationsAvant = panier.formations.length;
+  
+      panier.formations = panier.formations.filter(
+        (item) => item.formation.toString() !== formationId
+      );
+  
+      if (formationsAvant === panier.formations.length) {
+        return res.status(404).json({ message: 'Formation non trouvée dans le panier' });
+      }
+  
+      await panier.save();
+  
+      return res.status(200).json({ message: 'Formation retirée du panier avec succès' });
+    } catch (err) {
+      console.error('Erreur lors de la suppression de la formation du panier:', err);
+      return res.status(500).json({ message: 'Erreur serveur' });
+    }
+  };  
 
 
   module.exports = { 
     getPanier,
     addPanier,
-    
+    removeFromPanier,
    };

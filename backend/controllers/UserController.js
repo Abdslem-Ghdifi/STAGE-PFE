@@ -211,6 +211,4 @@ const getUserProfile = async (req, res) => {
 };
 
 
-
-
 module.exports = { userAdd, getUsers, login, upload, uploadImage , getUserProfile };

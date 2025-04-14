@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { FaShoppingCart } from 'react-icons/fa';  // Import de l'icône du panier
 
 function Headerh() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userImage, setUserImage] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [panierCount, setPanierCount] = useState(0);  // État pour le nombre de produits dans le panier
   const router = useRouter();
 
   useEffect(() => {
@@ -59,10 +61,37 @@ function Headerh() {
     };
   }, []);
 
+  useEffect(() => {
+    // Récupérer le nombre d'articles dans le panier à chaque fois que l'utilisateur est connecté
+    if (isLoggedIn) {
+      const fetchPanierCount = async () => {
+        const token = Cookies.get("token");
+        if (token) {
+          try {
+            const response = await axios.post(
+              "http://localhost:8080/api/suivi/panier", {},
+              {
+                headers: { Authorization: `Bearer ${token}` }
+              }
+            );
+            if (response.data && response.data.formations) {
+              setPanierCount(response.data.formations.length);  // Mettre à jour le nombre d'articles dans le panier
+            }
+          } catch (error) {
+            console.error("❌ Erreur lors de la récupération du panier :", error);
+          }
+        }
+      };
+
+      fetchPanierCount();
+    }
+  }, [isLoggedIn]);
+
   const handleLogoutClick = () => {
     console.log("🚪 Déconnexion en cours...");
     Cookies.remove("token"); // Supprimer le token du cookie
     setIsLoggedIn(false);
+    setPanierCount(0); // Réinitialiser le compteur du panier
     console.log("✅ Déconnecté avec succès.");
     router.push('/'); // Rediriger vers la page de connexion
   };
@@ -117,6 +146,16 @@ function Headerh() {
         <div className="flex items-center space-x-4">
           {isLoggedIn ? (
             <>
+              <Link href="/user/panier">
+                <div className="relative">
+                  <FaShoppingCart size={40} className="text-blue-500" />
+                  {panierCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {panierCount}
+                    </span>
+                  )}
+                </div>
+              </Link>
               <Link href="/user/profile">
                 <img src={userImage || "/images/default-user.png"} alt="Profil utilisateur" width={40} height={40} className="rounded-full cursor-pointer" />
               </Link>
@@ -126,8 +165,8 @@ function Headerh() {
             </>
           ) : (
             <Link href="/user/connexion" className="text-blue-500 font-bold">
-            Connexion
-          </Link>
+              Connexion
+            </Link>
           )}
         </div>
       </div>
