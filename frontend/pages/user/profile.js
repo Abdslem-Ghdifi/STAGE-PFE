@@ -26,7 +26,7 @@ const Profile = () => {
           {},
           {
             headers: {
-              Authorization: `Bearer ${token}`, // Authentification via le token JWT
+              Authorization: `Bearer ${token}`, 
             },
           }
         );

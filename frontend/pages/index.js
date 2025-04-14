@@ -1,4 +1,4 @@
-import Header from "./user/components/header";
+import Headerh from "./user/components/headerh";
 import Footer from "./user/components/footer";
 import ImageSlider from "./user/components/ImageSlide";
 import CourseCard from "./user/components/coursecard";
@@ -9,7 +9,7 @@ import CategoriesPage from "./user/components/categorieFormateur"
 export default function HomePage() {
   return (
     <div>
-      <Header />
+      <Headerh />
       <Vidimg/>
       <InteractiveLearningPage/>
       <CategoriesPage/>

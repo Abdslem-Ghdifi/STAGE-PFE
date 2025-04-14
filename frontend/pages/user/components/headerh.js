@@ -90,6 +90,10 @@ function Headerh() {
                 Accueil
               </Link>
             </li>
+
+            <Link href="/user/formation" className="text-blue-500 hover:underline">
+                Formation
+              </Link>
             <li>
               <button onClick={handleScrollToFooter} className="text-blue-500 hover:underline">
                 À propos
@@ -121,7 +125,9 @@ function Headerh() {
               </button>
             </>
           ) : (
-            <Link href="/" className="text-blue-500 font-bold">Connexion</Link>
+            <Link href="/user/connexion" className="text-blue-500 font-bold">
+            Connexion
+          </Link>
           )}
         </div>
       </div>
