@@ -1,6 +1,6 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-
+const authenticateUser =require ('../middlewares/userMID')
 const router = express.Router();
 const { 
     getPanier,
@@ -11,8 +11,6 @@ const {
 } = require("../controllers/suiviController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
 
-
-
 // route pour recuperer le panier de l'utilisateur
 router.post('/panier',authenticateToken,getPanier);
 
@@ -20,7 +18,7 @@ router.post('/panier',authenticateToken,getPanier);
 router.post('/add', authenticateToken,addPanier);
 
 //router pour supprimer une formation dans panier 
-router.post('/remove/:formationId',authenticateToken, removeFromPanier);
+router.delete('/remove/:formationId', authenticateUser,removeFromPanier);
 
 //router pour payer panier
 router.post('/payer',authenticateToken, payerPanier);

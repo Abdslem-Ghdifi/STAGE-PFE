@@ -23,6 +23,10 @@ const ressourceSchema = new mongoose.Schema({
     ref: 'Partie',
     required: true
   },
+  visibleGratuit: {
+    type: Boolean,
+    default: false // Par défaut, la formation n'est pas encore validée par le formateur
+  },
   createdAt: {
     type: Date,
     default: Date.now

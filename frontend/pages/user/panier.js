@@ -40,7 +40,7 @@ const PanierPage = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,withCredentials: true,
           },
         }
       );
@@ -81,9 +81,11 @@ const PanierPage = () => {
   }, [token]);
 
   const removeFromCart = async (formationId) => {
+    console.log("l id de formation pour suupp : ",formationId);
     try {
-      await axios.post(`http://localhost:8080/api/suivi/remove/${formationId}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      await axios.delete(`http://localhost:8080/api/suivi/remove/${formationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
       toast.success('Formation retirée du panier');
       fetchCart();

@@ -83,93 +83,109 @@ const addPanier = async (req, res) => {
 
 
 
-// Supprimer une formation du panier
+  // Supprimer une formation du panier
 const removeFromPanier = async (req, res) => {
-    const userId = req.user.id; // cohérent avec addPanier et getPanier
-    const { formationId } = req.params;
-  
-    try {
-      if (!formationId) {
-        return res.status(400).json({ message: 'ID formation requis' });
-      }
-  
-      const panier = await Panier.findOne({ apprenant: userId });
-      if (!panier) {
-        return res.status(404).json({ message: 'Panier introuvable' });
-      }
-  
-      // Supprimer la formation du tableau
-      const formationsAvant = panier.formations.length;
-  
-      panier.formations = panier.formations.filter(
-        (item) => item.formation.toString() !== formationId
-      );
-  
-      if (formationsAvant === panier.formations.length) {
-        return res.status(404).json({ message: 'Formation non trouvée dans le panier' });
-      }
-  
-      await panier.save();
-  
-      return res.status(200).json({ message: 'Formation retirée du panier avec succès' });
-    } catch (err) {
-      console.error('Erreur lors de la suppression de la formation du panier:', err);
-      return res.status(500).json({ message: 'Erreur serveur' });
-    }
-  };  
-
-  // Fonction pour payer le panier
-const payerPanier = async (req, res) => {
   const userId = req.user.id;
-  
+  const { formationId } = req.params;
 
   try {
-      // 1. Vérifier que l'utilisateur a un panier
-      const panier = await Panier.findOne({ apprenant: userId });
-      
-      if (!panier) {
-          return res.status(404).json({ message: 'Panier non trouvé' });
-      }
+    if (!formationId) {
+      return res.status(400).json({ message: 'ID requis' });
+    }
 
-      // 2. Vérifier que le panier n'est pas déjà payé
-      if (panier.estPaye) {
-          return res.status(400).json({ message: 'Ce panier a déjà été payé' });
-      }
+    const panier = await Panier.findOne({ apprenant: userId });
+    if (!panier) {
+      return res.status(404).json({ message: 'Panier introuvable' });
+    }
 
-      // 3. Vérifier que le panier n'est pas vide
-      if (panier.formations.length === 0) {
-          return res.status(400).json({ message: 'Le panier est vide' });
-      }
+    const formationsAvant = panier.formations.length;
 
-      // 4. Mettre à jour le panier avec les infos de paiement
-      panier.estPaye = true;
-      panier.datePaiement = new Date();
-      panier.referencePaiement = `PAY-${Date.now()}`;
+    // ✅ Ici, on compare avec _id de chaque objet dans le tableau
+    panier.formations = panier.formations.filter(
+      (item) => item._id.toString() !== formationId
+    );
 
-      // 5. Sauvegarder le panier
-      await panier.save();
+    if (formationsAvant === panier.formations.length) {
+      return res.status(404).json({ message: 'Élément non trouvé dans le panier' });
+    }
 
-      // 6. Répondre avec succès
-      return res.status(200).json({ 
-          message: 'Paiement effectué avec succès',
-          panier: {
-              _id: panier._id,
-              total: panier.total,
-              datePaiement: panier.datePaiement,
-              referencePaiement: panier.referencePaiement
-          }
-      });
+    await panier.save();
 
-  } catch (error) {
-      console.error('Erreur lors du paiement du panier:', error);
-      return res.status(500).json({ 
-          message: 'Erreur serveur lors du paiement du panier',
-          error: error.message 
-      });
+    return res.status(200).json({ message: 'Formation retirée du panier avec succès' });
+  } catch (err) {
+    console.error('Erreur lors de la suppression de la formation du panier:', err);
+    return res.status(500).json({ message: 'Erreur serveur' });
   }
 };
 
-
+  const Suivi = require('../models/suiviModel');
+  
+  const payerPanier = async (req, res) => {
+    const userId = req.user.id;
+  
+    try {
+      // 1. Récupérer le panier
+      const panier = await Panier.findOne({ apprenant: userId });
+  
+      if (!panier) {
+        return res.status(404).json({ message: 'Panier non trouvé' });
+      }
+  
+      if (panier.estPaye) {
+        return res.status(400).json({ message: 'Ce panier a déjà été payé' });
+      }
+  
+      if (panier.formations.length === 0) {
+        return res.status(400).json({ message: 'Le panier est vide' });
+      }
+  
+      // 2. Créer ou mettre à jour un document de suivi
+      let suivi = await Suivi.findOne({ apprenant: userId });
+  
+      const datePaiement = new Date();
+      const referencePaiement = `PAY-${Date.now()}`;
+  
+      if (suivi) {
+        // Ajouter les formations à la suite
+        suivi.formations = [...suivi.formations, ...panier.formations];
+        suivi.datePaiement = datePaiement;
+        suivi.referencePaiement = referencePaiement;
+      } else {
+        // Créer un nouveau suivi
+        suivi = new Suivi({
+          apprenant: userId,
+          formations: panier.formations,
+          datePaiement,
+          referencePaiement
+        });
+      }
+  
+      // 3. Sauvegarder le suivi
+      await suivi.save();
+  
+      // 4. Supprimer le panier (ou vider son contenu si tu préfères)
+      await Panier.findOneAndDelete({ apprenant: userId });
+  
+      // 5. Répondre au client
+      return res.status(200).json({
+        message: 'Paiement effectué avec succès. Formations ajoutées au suivi.',
+        suivi: {
+          total: suivi.total,
+          formations: suivi.formations,
+          datePaiement: suivi.datePaiement,
+          referencePaiement: suivi.referencePaiement
+        }
+      });
+  
+    } catch (error) {
+      console.error('Erreur lors du paiement du panier:', error);
+      return res.status(500).json({
+        message: 'Erreur serveur lors du paiement',
+        error: error.message
+      });
+    }
+  };
+  
   module.exports = { 
     getPanier,
     addPanier,

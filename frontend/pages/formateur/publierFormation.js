@@ -118,7 +118,7 @@ const PublierFormation = () => {
       });
 
       setMessage('Formation publiée avec succès!');
-      router.push('/formations'); // Rediriger vers la liste des formations après publication
+      router.push('/accueil'); // Rediriger vers la liste des formations après publication
     } catch (error) {
       setMessage('Erreur lors de la publication de la formation.');
       console.error("Erreur lors de la publication de la formation:", error.response || error);
