@@ -1,49 +1,51 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
-import Cookies from "js-cookie"; // Pour récupérer le token dans les cookies
+import Cookies from "js-cookie";
 import Footer from "./components/footer";
 import Headerh from "./components/headerh";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      const token = Cookies.get("token"); // Récupérer le token depuis les cookies
+      const token = Cookies.get("token");
 
       if (!token) {
-        console.log("Token non trouvé, redirection vers la page de connexion.");
-        router.push("/login"); // Si le token n'est pas trouvé, rediriger vers la page de connexion
+        console.log("Token non trouvé, redirection vers /login");
+        router.push("/login");
         return;
       }
 
       try {
-        // Envoi de la requête API avec le token dans l'en-tête Authorization
-        const response = await axios.post(
-          "http://localhost:8080/api/users/profile",
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`, 
-            },
-          }
-        );
+        const response = await axios.get("http://localhost:8080/api/users/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        });
 
-        setUser(response.data.user); // Sauvegarder les données de l'utilisateur dans l'état
+        setUser(response.data.user);
       } catch (error) {
-        console.error("Erreur lors de la récupération du profil utilisateur :", error);
-        // Optionnel : redirection en cas d'erreur (token invalide, serveur down, etc.)
-        router.push("/login");
+        console.error("Erreur lors de la récupération du profil :", error);
+        router.push("/login"); // Rediriger en cas d'erreur
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchUserProfile();
   }, [router]);
 
+  if (loading) {
+    return <p className="text-center mt-10">Chargement du profil...</p>;
+  }
+
   if (!user) {
-    return <p>Chargement du profil...</p>;
+    return <p className="text-center mt-10">Utilisateur non trouvé.</p>;
   }
 
   return (
@@ -54,7 +56,7 @@ const Profile = () => {
           <h2 className="text-3xl font-bold mb-6 text-center">Profil Utilisateur</h2>
           <div className="space-y-4">
             <img
-              src={user.image || "/images/default-user.png"} // Utilisation d'une image par défaut si l'utilisateur n'a pas d'image
+              src={user.image || "/images/default-user.png"}
               alt={`${user.nom} ${user.prenom}`}
               className="w-32 h-32 rounded-full mx-auto object-cover"
             />

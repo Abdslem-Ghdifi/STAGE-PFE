@@ -20,13 +20,19 @@ const GererFormation = () => {
   const [formInputs, setFormInputs] = useState({
     nouveauChapitre: { titre: '', ordre: '' },
     nouvellePartie: { titre: '', ordre: '' },
-    ressource: { titre: '', ordre: '', type: 'video', files: [], url: '' }
+    ressource: { titre: '', ordre: '', type: 'video', files: [], url: '', visibleGratuit: false }
   });
   const [message, setMessage] = useState('');
   const [activeForm, setActiveForm] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
-  const [editForm, setEditForm] = useState({ titre: '', ordre: '', type: 'video', url: '' });
+  const [editForm, setEditForm] = useState({ 
+    titre: '', 
+    ordre: '', 
+    type: 'video', 
+    url: '', 
+    visibleGratuit: false 
+  });
 
   const config = {
     headers: { Authorization: `Bearer ${token}` },
@@ -44,7 +50,6 @@ const GererFormation = () => {
         ]);
         
         setFormation(formationData.formation);
-        // Trier les chapitres par ordre dès le chargement
         const sortedChapitres = [...chapitreData.chapitres].sort((a, b) => a.ordre - b.ordre);
         setChapitres(sortedChapitres);
         
@@ -77,7 +82,7 @@ const GererFormation = () => {
     e.preventDefault();
     if (!draggedItem) return;
 
-    const sourceIndex = chapitres.findIndex(c => c._id === draggedItem);
+    const sourceIndex = chapitres.findIndex(c => c?._id === draggedItem);
     if (sourceIndex === -1 || sourceIndex === targetIndex) return;
 
     const newChapitres = [...chapitres];
@@ -106,6 +111,8 @@ const GererFormation = () => {
   };
 
   const toggleChapitre = async (chapitreId) => {
+    if (!chapitreId) return;
+    
     setExpandedChapitres(prev => ({
       ...prev,
       [chapitreId]: !prev[chapitreId]
@@ -116,7 +123,7 @@ const GererFormation = () => {
         const res = await axios.get(`http://localhost:8080/api/formation/${chapitreId}/parties`, config);
         
         const updatedChapitres = chapitres.map(chapitre => {
-          if (chapitre._id === chapitreId) {
+          if (chapitre?._id === chapitreId) {
             return { ...chapitre, parties: res.data.parties };
           }
           return chapitre;
@@ -125,8 +132,8 @@ const GererFormation = () => {
         setChapitres(updatedChapitres);
         
         const newExpandedParties = { ...expandedParties };
-        res.data.parties.forEach(partie => {
-          if (newExpandedParties[partie._id] === undefined) {
+        res.data.parties?.forEach(partie => {
+          if (partie?._id && newExpandedParties[partie._id] === undefined) {
             newExpandedParties[partie._id] = false;
           }
         });
@@ -138,6 +145,8 @@ const GererFormation = () => {
   };
 
   const togglePartie = async (partieId) => {
+    if (!partieId) return;
+    
     setExpandedParties(prev => ({
       ...prev,
       [partieId]: !prev[partieId]
@@ -148,16 +157,15 @@ const GererFormation = () => {
         const res = await axios.get(`http://localhost:8080/api/formation/${partieId}/ressources`, config);
         
         const updatedChapitres = chapitres.map(chapitre => {
-          if (chapitre.parties) {
-            const updatedParties = chapitre.parties.map(partie => {
-              if (partie._id === partieId) {
-                return { ...partie, ressources: res.data.ressources };
-              }
-              return partie;
-            });
-            return { ...chapitre, parties: updatedParties };
-          }
-          return chapitre;
+          if (!chapitre?.parties) return chapitre;
+          
+          const updatedParties = chapitre.parties.map(partie => {
+            if (partie?._id === partieId) {
+              return { ...partie, ressources: res.data.ressources };
+            }
+            return partie;
+          });
+          return { ...chapitre, parties: updatedParties };
         });
         
         setChapitres(updatedChapitres);
@@ -182,17 +190,20 @@ const GererFormation = () => {
     setFormInputs({
       nouveauChapitre: { titre: '', ordre: chapitres.length + 1 },
       nouvellePartie: { titre: '', ordre: 1 },
-      ressource: { titre: '', ordre: 1, type: 'video', files: [], url: '' }
+      ressource: { titre: '', ordre: 1, type: 'video', files: [], url: '', visibleGratuit: false }
     });
   };
 
   const startEditing = (type, item) => {
+    if (!item) return;
+    
     setEditingItem({ type, id: item._id });
     setEditForm({
-      titre: item.titre,
-      ordre: item.ordre,
+      titre: item.titre || '',
+      ordre: item.ordre || '',
       type: item.type || 'video',
-      url: item.url || ''
+      url: item.url || '',
+      visibleGratuit: item.visibleGratuit || false
     });
     setActiveForm(null);
   };
@@ -209,7 +220,6 @@ const GererFormation = () => {
       let payload = null;
       let isMultipart = false;
   
-      // Déterminer le endpoint et le type de données à envoyer
       if (editingItem.type === 'chapitre') {
         endpoint = `http://localhost:8080/api/formation/chapitre/${editingItem.id}`;
         payload = { titre: editForm.titre, ordre: editForm.ordre };
@@ -226,6 +236,7 @@ const GererFormation = () => {
           formData.append('ordre', editForm.ordre);
           formData.append('type', editForm.type);
           formData.append('url', editForm.url);
+          formData.append('visibleGratuit', editForm.visibleGratuit);
           Array.from(editForm.files).forEach(file => {
             formData.append('ressources', file);
           });
@@ -236,11 +247,11 @@ const GererFormation = () => {
             ordre: editForm.ordre,
             type: editForm.type,
             url: editForm.url,
+            visibleGratuit: editForm.visibleGratuit
           };
         }
       }
   
-      // Envoyer la requête PUT avec les bons headers
       await axios.put(endpoint, payload, isMultipart
         ? {
             ...config,
@@ -252,27 +263,27 @@ const GererFormation = () => {
         : config
       );
   
-      // Mettre à jour localement les données
       const updatedChapitres = chapitres.map(chapitre => {
-        if (editingItem.type === 'chapitre' && chapitre._id === editingItem.id) {
+        if (editingItem.type === 'chapitre' && chapitre?._id === editingItem.id) {
           return { ...chapitre, titre: editForm.titre, ordre: editForm.ordre };
         }
   
-        if (chapitre.parties) {
+        if (chapitre?.parties) {
           const updatedParties = chapitre.parties.map(partie => {
-            if (editingItem.type === 'partie' && partie._id === editingItem.id) {
+            if (editingItem.type === 'partie' && partie?._id === editingItem.id) {
               return { ...partie, titre: editForm.titre, ordre: editForm.ordre };
             }
   
-            if (partie.ressources) {
+            if (partie?.ressources) {
               const updatedRessources = partie.ressources.map(ressource => {
-                if (editingItem.type === 'ressource' && ressource._id === editingItem.id) {
+                if (editingItem.type === 'ressource' && ressource?._id === editingItem.id) {
                   return {
                     ...ressource,
                     titre: editForm.titre,
                     ordre: editForm.ordre,
                     type: editForm.type,
                     url: editForm.url,
+                    visibleGratuit: editForm.visibleGratuit
                   };
                 }
                 return ressource;
@@ -298,7 +309,6 @@ const GererFormation = () => {
       setMessage(`Erreur lors de la modification du ${editingItem.type}`);
     }
   };
-  
 
   const ajouterChapitre = async (e) => {
     e.preventDefault();
@@ -335,7 +345,7 @@ const GererFormation = () => {
       }, config);
       
       const updatedChapitres = chapitres.map(chapitre => {
-        if (chapitre._id === selectedChapitreId) {
+        if (chapitre?._id === selectedChapitreId) {
           const parties = chapitre.parties || [];
           return {
             ...chapitre,
@@ -357,7 +367,7 @@ const GererFormation = () => {
 
   const ajouterRessource = async (e) => {
     e.preventDefault();
-    const { titre, ordre, type, files, url } = formInputs.ressource;
+    const { titre, ordre, type, files, url, visibleGratuit } = formInputs.ressource;
     if (!titre || !ordre || !selectedPartieId) return;
 
     const formData = new FormData();
@@ -366,6 +376,7 @@ const GererFormation = () => {
     formData.append('type', type);
     formData.append('ordre', ordre);
     formData.append('url', url);
+    formData.append('visibleGratuit', visibleGratuit);
     Array.from(files).forEach(file => formData.append('ressources', file));
 
     try {
@@ -375,27 +386,26 @@ const GererFormation = () => {
       });
       
       const updatedChapitres = chapitres.map(chapitre => {
-        if (chapitre.parties) {
-          const updatedParties = chapitre.parties.map(partie => {
-            if (partie._id === selectedPartieId) {
-              const ressources = partie.ressources || [];
-              return {
-                ...partie,
-                ressources: [...ressources, res.data.ressource]
-              };
-            }
-            return partie;
-          });
-          return { ...chapitre, parties: updatedParties };
-        }
-        return chapitre;
+        if (!chapitre?.parties) return chapitre;
+        
+        const updatedParties = chapitre.parties.map(partie => {
+          if (partie?._id === selectedPartieId) {
+            const ressources = partie.ressources || [];
+            return {
+              ...partie,
+              ressources: [...ressources, res.data.ressource]
+            };
+          }
+          return partie;
+        });
+        return { ...chapitre, parties: updatedParties };
       });
       
       setChapitres(updatedChapitres);
       setMessage("Ressource ajoutée avec succès.");
       setFormInputs((prev) => ({
         ...prev,
-        ressource: { titre: '', ordre: 1, type: 'video', files: [], url: '' },
+        ressource: { titre: '', ordre: 1, type: 'video', files: [], url: '', visibleGratuit: false },
       }));
       setActiveForm(null);
     } catch {
@@ -404,11 +414,12 @@ const GererFormation = () => {
   };
 
   const supprimerChapitre = async (chapitreId) => {
+    if (!chapitreId) return;
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce chapitre et toutes ses parties ?")) return;
     
     try {
       await axios.delete(`http://localhost:8080/api/formation/chapitre/${chapitreId}`, config);
-      setChapitres(prev => prev.filter(c => c._id !== chapitreId));
+      setChapitres(prev => prev.filter(c => c?._id !== chapitreId));
       setMessage("Chapitre supprimé avec succès.");
     } catch {
       setMessage("Erreur lors de la suppression du chapitre.");
@@ -416,19 +427,19 @@ const GererFormation = () => {
   };
 
   const supprimerPartie = async (partieId) => {
+    if (!partieId) return;
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette partie et toutes ses ressources ?")) return;
     
     try {
       await axios.delete(`http://localhost:8080/api/formation/partie/${partieId}`, config);
       
       const updatedChapitres = chapitres.map(chapitre => {
-        if (chapitre.parties) {
-          return {
-            ...chapitre,
-            parties: chapitre.parties.filter(p => p._id !== partieId)
-          };
-        }
-        return chapitre;
+        if (!chapitre?.parties) return chapitre;
+        
+        return {
+          ...chapitre,
+          parties: chapitre.parties.filter(p => p?._id !== partieId)
+        };
       });
       
       setChapitres(updatedChapitres);
@@ -439,25 +450,24 @@ const GererFormation = () => {
   };
 
   const supprimerRessource = async (ressourceId) => {
+    if (!ressourceId) return;
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette ressource ?")) return;
     
     try {
       await axios.delete(`http://localhost:8080/api/formation/ressource/${ressourceId}`, config);
       
       const updatedChapitres = chapitres.map(chapitre => {
-        if (chapitre.parties) {
-          const updatedParties = chapitre.parties.map(partie => {
-            if (partie.ressources) {
-              return {
-                ...partie,
-                ressources: partie.ressources.filter(r => r._id !== ressourceId)
-              };
-            }
-            return partie;
-          });
-          return { ...chapitre, parties: updatedParties };
-        }
-        return chapitre;
+        if (!chapitre?.parties) return chapitre;
+        
+        const updatedParties = chapitre.parties.map(partie => {
+          if (!partie?.ressources) return partie;
+          
+          return {
+            ...partie,
+            ressources: partie.ressources.filter(r => r?._id !== ressourceId)
+          };
+        });
+        return { ...chapitre, parties: updatedParties };
       });
       
       setChapitres(updatedChapitres);
@@ -468,7 +478,7 @@ const GererFormation = () => {
   };
 
   const renderEditForm = () => {
-    if (!editingItem) return null;
+    if (!editingItem || !editForm) return null;
 
     return (
       <div className="mb-8 p-6 bg-white rounded-lg shadow border border-gray-200">
@@ -491,7 +501,7 @@ const GererFormation = () => {
             <input
               type="text"
               className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
-              value={editForm.titre}
+              value={editForm.titre || ''}
               onChange={(e) => setEditForm({...editForm, titre: e.target.value})}
               required
             />
@@ -502,7 +512,7 @@ const GererFormation = () => {
             <input
               type="number"
               className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
-              value={editForm.ordre}
+              value={editForm.ordre || ''}
               onChange={(e) => setEditForm({...editForm, ordre: e.target.value})}
               required
               min="1"
@@ -515,7 +525,7 @@ const GererFormation = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
                 <select
                   className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
-                  value={editForm.type}
+                  value={editForm.type || 'video'}
                   onChange={(e) => setEditForm({...editForm, type: e.target.value})}
                 >
                   <option value="video">Vidéo</option>
@@ -533,7 +543,7 @@ const GererFormation = () => {
                     type="text"
                     placeholder="URL de la ressource"
                     className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
-                    value={editForm.url}
+                    value={editForm.url || ''}
                     onChange={(e) => setEditForm({...editForm, url: e.target.value})}
                     required
                   />
@@ -545,6 +555,18 @@ const GererFormation = () => {
                     required={!editForm.url}
                   />
                 )}
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="visibleGratuitEdit"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  checked={editForm.visibleGratuit || false}
+                  onChange={(e) => setEditForm({...editForm, visibleGratuit: e.target.checked})}
+                />
+                <label htmlFor="visibleGratuitEdit" className="ml-2 block text-sm text-gray-700">
+                  Visible gratuitement
+                </label>
               </div>
             </>
           )}
@@ -567,7 +589,6 @@ const GererFormation = () => {
       </div>
     );
   };
-
 
   return (
     <>
@@ -594,12 +615,12 @@ const GererFormation = () => {
           )}
           
           <ul className="space-y-3">
-            {chapitres.map((chapitre, index) => (
+            {chapitres?.map((chapitre, index) => (
               <li 
-                key={chapitre._id} 
-                className={`border rounded-lg overflow-hidden transition-all ${draggedItem === chapitre._id ? 'opacity-50' : 'opacity-100'}`}
+                key={chapitre?._id || index} 
+                className={`border rounded-lg overflow-hidden transition-all ${draggedItem === chapitre?._id ? 'opacity-50' : 'opacity-100'}`}
                 draggable
-                onDragStart={(e) => handleDragStart(e, chapitre._id)}
+                onDragStart={(e) => handleDragStart(e, chapitre?._id)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
               >
@@ -607,16 +628,16 @@ const GererFormation = () => {
                   <div 
                     className="flex items-center flex-1"
                     onClick={() => {
-                      toggleChapitre(chapitre._id);
-                      setSelectedChapitreId(chapitre._id);
+                      toggleChapitre(chapitre?._id);
+                      setSelectedChapitreId(chapitre?._id);
                       setSelectedPartieId(null);
                     }}
                   >
                     <span className="mr-2 text-gray-500">
-                      {expandedChapitres[chapitre._id] ? <FaChevronDown /> : <FaChevronRight />}
+                      {expandedChapitres[chapitre?._id] ? <FaChevronDown /> : <FaChevronRight />}
                     </span>
                     <span className="font-medium flex-1 text-gray-800">
-                      {chapitre.titre} (Ordre: {chapitre.ordre})
+                      {chapitre?.titre || 'Sans titre'} (Ordre: {chapitre?.ordre || '?'})
                     </span>
                   </div>
                   
@@ -624,13 +645,13 @@ const GererFormation = () => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedChapitreId(chapitre._id);
+                        setSelectedChapitreId(chapitre?._id);
                         setActiveForm('partie');
                         setFormInputs(prev => ({
                           ...prev,
                           nouvellePartie: { 
                             titre: '', 
-                            ordre: (chapitre.parties?.length || 0) + 1 
+                            ordre: (chapitre?.parties?.length || 0) + 1 
                           }
                         }));
                       }}
@@ -652,7 +673,7 @@ const GererFormation = () => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        supprimerChapitre(chapitre._id);
+                        supprimerChapitre(chapitre?._id);
                       }}
                       className="p-1 text-red-600 hover:bg-red-100 rounded-full transition-colors"
                       title="Supprimer le chapitre"
@@ -662,41 +683,42 @@ const GererFormation = () => {
                   </div>
                 </div>
                 
-                {expandedChapitres[chapitre._id] && (
+                {expandedChapitres[chapitre?._id] && (
                   <ul className="ml-6 mt-2 space-y-2">
-                    {chapitre.parties && chapitre.parties.length > 0 ? (
-                      chapitre.parties.map((partie) => (
-                        <li key={partie._id} className="border rounded-lg overflow-hidden bg-gray-50">
+                    {chapitre?.parties?.length > 0 ? (
+                      chapitre.parties.map((partie, pIndex) => (
+                        <li key={partie?._id || pIndex} className="border rounded-lg overflow-hidden bg-gray-50">
                           <div className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-100 border-b">
                             <div 
                               className="flex items-center flex-1"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                togglePartie(partie._id);
-                                setSelectedPartieId(partie._id);
+                                togglePartie(partie?._id);
+                                setSelectedPartieId(partie?._id);
                               }}
                             >
                               <span className="mr-2 text-gray-500">
-                                {expandedParties[partie._id] ? <FaChevronDown /> : <FaChevronRight />}
+                                {expandedParties[partie?._id] ? <FaChevronDown /> : <FaChevronRight />}
                               </span>
                               <span className="flex-1 text-gray-700">
-                                {partie.titre} (Ordre: {partie.ordre})
+                                {partie?.titre || 'Sans titre'} (Ordre: {partie?.ordre || '?'})
                               </span>
                             </div>
                             <div className="flex space-x-1">
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedPartieId(partie._id);
+                                  setSelectedPartieId(partie?._id);
                                   setActiveForm('ressource');
                                   setFormInputs(prev => ({
                                     ...prev,
                                     ressource: { 
                                       titre: '', 
-                                      ordre: (partie.ressources?.length || 0) + 1, 
+                                      ordre: (partie?.ressources?.length || 0) + 1, 
                                       type: 'video', 
                                       files: [],
-                                      url: '' 
+                                      url: '',
+                                      visibleGratuit: false
                                     }
                                   }));
                                 }}
@@ -718,7 +740,7 @@ const GererFormation = () => {
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  supprimerPartie(partie._id);
+                                  supprimerPartie(partie?._id);
                                 }}
                                 className="p-1 text-red-600 hover:bg-red-100 rounded-full transition-colors"
                                 title="Supprimer la partie"
@@ -728,18 +750,21 @@ const GererFormation = () => {
                             </div>
                           </div>
                           
-                          {expandedParties[partie._id] && partie.ressources && (
+                          {expandedParties[partie?._id] && partie?.ressources && (
                             <ul className="ml-6 mt-2 space-y-2 pb-2">
                               {partie.ressources.length > 0 ? (
-                                partie.ressources.map((ressource) => (
+                                partie.ressources.map((ressource, rIndex) => (
                                   <li 
-                                    key={ressource._id} 
+                                    key={ressource?._id || rIndex} 
                                     className="p-2 bg-white border rounded text-sm flex justify-between items-center"
                                   >
                                     <div>
-                                      <span className="font-medium">{ressource.titre}</span>
-                                      <span className="text-gray-500 ml-2 text-xs">({ressource.type})</span>
-                                      {ressource.url && <span className="block text-xs text-blue-500 truncate">{ressource.url}</span>}
+                                      <span className="font-medium">{ressource?.titre || 'Sans titre'}</span>
+                                      <span className="text-gray-500 ml-2 text-xs">({ressource?.type || 'non défini'})</span>
+                                      {ressource?.url && <span className="block text-xs text-blue-500 truncate">{ressource.url}</span>}
+                                      <span className="block text-xs text-green-600">
+                                        {ressource?.visibleGratuit ? "Visible gratuitement" : "Payant"}
+                                      </span>
                                     </div>
                                     <div className="flex space-x-1">
                                       <button 
@@ -750,7 +775,7 @@ const GererFormation = () => {
                                         <FaEdit size={12} />
                                       </button>
                                       <button 
-                                        onClick={() => supprimerRessource(ressource._id)}
+                                        onClick={() => supprimerRessource(ressource?._id)}
                                         className="text-red-600 hover:text-red-800 p-1"
                                         title="Supprimer la ressource"
                                       >
@@ -836,7 +861,6 @@ const GererFormation = () => {
               </div>
             </form>
           )}
-
           {/* Formulaire Ajouter Partie */}
           {activeForm === 'partie' && (
             <form onSubmit={ajouterPartie} className="mb-8 p-6 bg-white rounded-lg shadow border border-gray-200">
@@ -967,6 +991,18 @@ const GererFormation = () => {
                     onChange={(e) => handleInputChange('ressource', 'files', e.target.files)}
                     required={formInputs.ressource.type !== 'lien'}
                   />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="visibleGratuit"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={formInputs.ressource.visibleGratuit}
+                    onChange={(e) => handleInputChange('ressource', 'visibleGratuit', e.target.checked)}
+                  />
+                  <label htmlFor="visibleGratuit" className="ml-2 block text-sm text-gray-700">
+                    Visible gratuitement
+                  </label>
                 </div>
               </div>
               <div className="flex justify-end mt-6 space-x-3">

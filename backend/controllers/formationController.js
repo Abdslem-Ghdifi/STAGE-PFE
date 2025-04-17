@@ -246,7 +246,7 @@ const ajouterPartie = async (req, res) => {
 
 const ajouterRessource = async (req, res) => {
   try {
-    const { partieId, titre, type, ordre } = req.body;
+    const { partieId, titre, type, ordre,visibleGratuit  } = req.body;
     const files = req.files;
 
     // Vérifier que la partie existe
@@ -263,6 +263,7 @@ const ajouterRessource = async (req, res) => {
         url: `/uploads/${file.filename}`, // Stocker l'URL du fichier
         partie: partieId,
         ordre: ordre, 
+        visibleGratuit : visibleGratuit,
       });
 
       await nouvelleRessource.save();
@@ -421,7 +422,7 @@ const getFormationComplete = async (formationId) => {
           options: { sort: { ordre: 1 } },
           populate: {
             path: 'ressources',
-            select: 'titre type url ordre',
+            select: 'titre type url ordre visibleGratuit',
             options: { sort: { ordre: 1 } },
           }
         }
@@ -639,10 +640,10 @@ const deletePartie = async (req, res) => {
 
 const updateRessource = async (req, res) => {
   try {
-    const { titre, ordre, type, url } = req.body;
+    const { titre, ordre, type, url ,visibleGratuit} = req.body;
     const ressource = await Ressource.findByIdAndUpdate(
       req.params.id,
-      { titre, ordre, type, url },
+      { titre, ordre, type, url ,visibleGratuit},
       { new: true }
     );
     res.status(200).json({ ressource });

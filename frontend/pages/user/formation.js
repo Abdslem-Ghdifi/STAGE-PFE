@@ -166,6 +166,20 @@ const FormationsPage = () => {
           <p className="text-gray-600 max-w-2xl mx-auto">
             Découvrez notre catalogue complet de formations professionnelles
           </p>
+
+          {isLoggedIn && (
+    <div className="mt-4">
+      <Link 
+        href="/user/mesFormation" 
+        className="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        Mes formations suivies
+      </Link>
+    </div>
+  )}
         </header>
 
         <div className="mb-8 max-w-xl mx-auto">
@@ -233,7 +247,12 @@ const FormationsPage = () => {
                           </span>
                           <div className="flex space-x-2">
                             
-
+                          <Link
+                            href={`/user/formations/${formation._id}`}
+                            className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition"
+                          >
+                            Détails
+                          </Link>
                 
                             <button
                               onClick={() => addToCart(formation._id)}

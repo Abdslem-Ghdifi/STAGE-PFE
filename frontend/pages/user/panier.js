@@ -4,10 +4,17 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Headerh from './components/headerh';
-import Footer from './components/footer';
+import dynamic from 'next/dynamic';
+
+// Chargement dynamique des composants pour éviter les problèmes d'hydratation
+const Headerh = dynamic(() => import('./components/headerh'), { ssr: false });
+const Footer = dynamic(() => import('./components/footer'), { ssr: false });
+const ToastContainer = dynamic(
+  () => import('react-toastify').then((c) => c.ToastContainer),
+  { ssr: false }
+);
 
 const PanierPage = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -26,30 +33,35 @@ const PanierPage = () => {
   });
   const [paymentErrors, setPaymentErrors] = useState({});
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
-  const token = Cookies.get('token');
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    setHasMounted(true);
+    if (typeof window !== 'undefined') {
+      setToken(Cookies.get('token'));
+    }
+  }, []);
 
   const fetchCart = async () => {
+    if (!token) return;
+    
     setLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post(
-        'http://localhost:8080/api/suivi/panier',
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,withCredentials: true,
-          },
-        }
-      );
+      const response = await axios.get(`http://localhost:8080/api/suivi/panier`, {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
+      });
 
       const panierData = response.data;
       const formations = panierData.formations?.map(item => ({
         ...item.formation,
         prix: item.prix || 0,
-        _id: item._id // Ajout de l'ID du suivi pour le paiement
+        _id: item._id
       })) || [];
 
       setCartItems(formations);
@@ -58,6 +70,7 @@ const PanierPage = () => {
       console.error('Erreur fetchCart:', err);
       if (err.response?.status === 401) {
         Cookies.remove('token');
+        setToken(null);
         toast.error('Veuillez vous connecter pour accéder à votre panier');
       } else {
         setError(err.response?.data?.message || 'Erreur lors du chargement du panier');
@@ -73,15 +86,12 @@ const PanierPage = () => {
   };
 
   useEffect(() => {
-    if (!token) {
-      toast.error('Veuillez vous connecter pour accéder à votre panier');
-      return;
+    if (token) {
+      fetchCart();
     }
-    fetchCart();
   }, [token]);
 
   const removeFromCart = async (formationId) => {
-    console.log("l id de formation pour suupp : ",formationId);
     try {
       await axios.delete(`http://localhost:8080/api/suivi/remove/${formationId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -152,29 +162,26 @@ const PanierPage = () => {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
-    
+  
     if (!validatePaymentForm()) {
       return;
     }
-
+  
     setIsProcessingPayment(true);
-
+  
     try {
-      // Enregistrer le paiement
       await axios.post(
-        'http://localhost:8080/api/suivi/payer',
-        {},
+        `http://localhost:8080/api/suivi/payer`,
+        {}, // body vide ici car il n'y a pas de données à envoyer
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
         }
       );
-
+  
       toast.success('Paiement effectué avec succès !');
       setShowPaymentModal(false);
-      fetchCart(); // Rafraîchir le panier
-      
+      fetchCart();
     } catch (err) {
       console.error('Erreur de paiement:', err);
       toast.error(err.response?.data?.message || 'Erreur lors du paiement');
@@ -182,7 +189,7 @@ const PanierPage = () => {
       setIsProcessingPayment(false);
     }
   };
-
+  
   const openCheckoutModal = () => {
     if (cartItems.length === 0) {
       toast.warning('Votre panier est vide');
@@ -190,6 +197,18 @@ const PanierPage = () => {
     }
     setShowPaymentModal(true);
   };
+
+  if (!hasMounted) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Head>
+          <title>Mon Panier - ScreenLearning</title>
+          <meta name="description" content="Votre panier de formations" />
+        </Head>
+        <div className="flex-grow"></div>
+      </div>
+    );
+  }
 
   if (!token) {
     return (
@@ -328,7 +347,7 @@ const PanierPage = () => {
                               <img
                                 src={item.image || '/default-formation.jpg'}
                                 alt={item.titre}
-                                className="h-full w-full object-cover"
+                                className="w-[120px] h-[120px] rounded-full mx-auto mb-3 object-cover hover:scale-105 transition-transform duration-300"
                                 onError={(e) => { e.target.src = '/default-formation.jpg'; }}
                               />
                             </div>
@@ -414,7 +433,6 @@ const PanierPage = () => {
         </div>
       </main>
 
-      {/* Modal de paiement */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">

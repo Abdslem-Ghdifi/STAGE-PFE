@@ -178,17 +178,21 @@ const uploadImage = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // L'ID de l'utilisateur est maintenant disponible grâce au middleware
+    const userId = req.user?.id;
 
-    // Chercher l'utilisateur dans la base de données
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: "Utilisateur non trouvé." });
+    if (!userId) {
+      return res.status(400).json({ message: 'ID utilisateur requis' });
     }
 
-    // Retourner les informations de l'utilisateur
-    res.status(200).json({
+    console.log('Récupération du profil utilisateur avec ID:', userId);
+
+    const user = await User.findById(userId).exec();
+
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    return res.status(200).json({
       success: true,
       user: {
         id: user._id,
@@ -200,15 +204,17 @@ const getUserProfile = async (req, res) => {
         image: user.image,
       },
     });
+
   } catch (error) {
-    console.error("Erreur : ", error);
-    res.status(500).json({
+    console.error('Erreur lors de la récupération du profil utilisateur:', error);
+    return res.status(500).json({ 
       success: false,
-      message: "Erreur lors de la récupération du profil utilisateur.",
-      error: error.message,
+      message: 'Erreur serveur lors de la récupération du profil utilisateur.',
+      error: error.message 
     });
   }
 };
+
 
 
 module.exports = { userAdd, getUsers, login, upload, uploadImage , getUserProfile };

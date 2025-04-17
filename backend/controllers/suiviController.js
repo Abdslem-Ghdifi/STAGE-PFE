@@ -1,34 +1,45 @@
 const Panier = require('../models/panierModel');
 const Formation = require('../models/formationModel');
 const User = require('../models/userModel');
+const Suivi = require('../models/suiviModel');
 const jwt = require('jsonwebtoken');
+const Chapitre = require('../models/chapitreModel');
+const Partie = require('../models/partieModel');
+const Ressource = require('../models/ressourceModel');
 
 const getPanier = async (req, res) => {
-    try {
-     
-        const userId = req.user.id; // L'ID de l'utilisateur est supposé être stocké dans req.user
-  
-      console.log('Récupération du panier pour l’utilisateur avec ID :', userId);  // Log pour déboguer
-  
-      // Récupérer le panier de l'utilisateur
-      const panier = await Panier.findOne({ apprenant: userId})
-        
-        .populate('formations.formation')  // On "populate" pour récupérer les détails des formations
-        .exec();
-  
-      // Vérifier si le panier existe
-      if (!panier) {
-        return res.status(404).json({ message: 'Panier non trouvé' });
-      }
-  
-      // Répondre avec les données du panier
-      return res.status(200).json(panier);
-    } catch (error) {
-      console.error('Erreur lors de la récupération du panier:', error);  // Log de l'erreur
-      return res.status(500).json({ message: 'Erreur serveur lors de la récupération du panier' });
+  try {
+    const userId = req.user.id; // L'ID de l'utilisateur extrait du token
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'ID utilisateur requis' });
     }
-  };
-  
+
+    console.log('Récupération du panier pour l\'utilisateur avec ID:', userId);
+
+    // Récupérer le panier de l'utilisateur avec population des formations
+    const panier = await Panier.findOne({ apprenant: userId })
+      .populate('formations.formation')
+      .exec();
+
+    // Si aucun panier n'existe, retourner un tableau vide au lieu d'une erreur
+    if (!panier) {
+      return res.status(200).json({ formations: [] });
+    }
+
+    // Répondre avec les données du panier
+    return res.status(200).json({
+      formations: panier.formations || []
+    });
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération du panier:', error);
+    return res.status(500).json({ 
+      message: 'Erreur serveur lors de la récupération du panier',
+      error: error.message 
+    });
+  }
+};  
 
 
 
@@ -118,7 +129,9 @@ const removeFromPanier = async (req, res) => {
   }
 };
 
-  const Suivi = require('../models/suiviModel');
+
+//payer panier 
+  
   
   const payerPanier = async (req, res) => {
     const userId = req.user.id;
@@ -185,11 +198,50 @@ const removeFromPanier = async (req, res) => {
       });
     }
   };
+
+  // Fonction pour récupérer les formations d'un apprenant
+
+  const getFormationsByApprenant = async (req, res) => {
+    try {
+      // Utilisez l'ID de l'utilisateur connecté depuis le token
+      const apprenantId = req.user.id;
   
+      // Rechercher le suivi de l'apprenant
+      const suivi = await Suivi.findOne({ apprenant: apprenantId })
+        .populate({
+          path: 'formations.formation',
+          model: 'Formation'
+        });
+  
+      if (!suivi) {
+        return res.status(200).json({ formations: [] });
+      }
+  
+      // Formater la réponse de manière plus simple
+      const formations = suivi.formations.map(item => ({
+        ...item.formation.toObject(),
+        dateAjout: item.dateAjout,
+        prix: item.prix
+      }));
+  
+      res.status(200).json({ formations });
+  
+    } catch (error) {
+      console.error("Erreur:", error);
+      res.status(500).json({ 
+        message: "Erreur serveur",
+        error: error.message 
+      });
+    }
+  };
+
   module.exports = { 
     getPanier,
     addPanier,
     removeFromPanier,
     payerPanier,
+    getFormationsByApprenant,
+    
+
 
    };

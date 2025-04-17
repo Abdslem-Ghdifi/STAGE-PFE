@@ -11,7 +11,7 @@ const ressourceSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['video', 'pdf'],
+    enum: ['video', 'pdf','lien','image'],
     required: true
   },
   url: {
@@ -25,7 +25,7 @@ const ressourceSchema = new mongoose.Schema({
   },
   visibleGratuit: {
     type: Boolean,
-    default: false // Par défaut, la formation n'est pas encore validée par le formateur
+    default: false //  
   },
   createdAt: {
     type: Date,

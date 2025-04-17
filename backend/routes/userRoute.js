@@ -6,13 +6,14 @@ const User = require("../models/userModel"); // Assure-toi d'importer ton modèl
 const { forgetPass } = require("../controllers/passController");
 const { userAdd, getUsers, upload, uploadImage, getUserProfile } = require("../controllers/UserController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
+const authenticateUser =require ('../middlewares/userMID')
 const { getCategories,getAllExperts} = require("../controllers/formationController");
 // Route pour ajouter un utilisateur avec image upload
 router.post("/add", upload.single("image"), userAdd);
 // Route pour uploader une image séparément
 router.post("/imageUpload", upload.single("image"), uploadImage);
 // Route pour récupérer le profil de l'utilisateur
-router.post('/profile', authenticateToken, getUserProfile);
+router.get('/profile', authenticateUser, getUserProfile);
 // Middleware d'authentification
 const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
