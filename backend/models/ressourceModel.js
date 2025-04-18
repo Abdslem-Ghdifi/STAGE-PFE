@@ -25,8 +25,9 @@ const ressourceSchema = new mongoose.Schema({
   },
   visibleGratuit: {
     type: Boolean,
-    default: false //  
+    default: false 
   },
+ 
   createdAt: {
     type: Date,
     default: Date.now

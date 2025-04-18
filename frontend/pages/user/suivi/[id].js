@@ -7,7 +7,7 @@ import Cookies from 'js-cookie';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import dynamic from 'next/dynamic';
-import { FaChevronDown, FaChevronRight, FaVideo, FaFilePdf, FaImage, FaLink, FaCheckCircle } from 'react-icons/fa';
+import { FaChevronDown, FaChevronRight, FaVideo, FaFilePdf, FaImage, FaLink, FaCheckCircle, FaCertificate } from 'react-icons/fa';
 
 const Headerh = dynamic(() => import('../components/headerh'), { ssr: false });
 const Footer = dynamic(() => import('../components/footer'), { ssr: false });
@@ -20,6 +20,8 @@ const FormationDetailPage = () => {
   const [error, setError] = useState(null);
   const [expandedChapitres, setExpandedChapitres] = useState({});
   const [expandedParties, setExpandedParties] = useState({});
+  const [progression, setProgression] = useState(0);
+  const [attestationDisponible, setAttestationDisponible] = useState(false);
   const router = useRouter();
   const { id } = router.query;
 
@@ -35,7 +37,8 @@ const FormationDetailPage = () => {
       setError(null);
 
       try {
-        const response = await axios.get(
+        // Récupérer les données de la formation
+        const formationResponse = await axios.get(
           `http://localhost:8080/api/formation/${id}`,
           {
             headers: { 
@@ -47,19 +50,36 @@ const FormationDetailPage = () => {
           }
         );
 
-        if (!response.data || !response.data.chapitres) {
+        if (!formationResponse.data || !formationResponse.data.chapitres) {
           throw new Error('Structure de données invalide');
         }
 
-        setFormation(response.data);
-        setChapitres(response.data.chapitres);
+        setFormation(formationResponse.data);
+        setChapitres(formationResponse.data.chapitres);
+
+        // Récupérer la progression de l'apprenant
+        const progressionResponse = await axios.get(
+          `http://localhost:8080/api/suivi/${id}/attestation/check`,
+          {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            withCredentials: true
+          }
+        );
+
+        if (progressionResponse.data) {
+          setProgression(progressionResponse.data.data.progression);
+          setAttestationDisponible(progressionResponse.data.data.eligible);
+        }
 
         // Initialiser les états - chapitres fermés par défaut
         const initialChapitresState = {};
         const initialPartiesState = {};
         
-        response.data.chapitres.forEach(chapitre => {
-          initialChapitresState[chapitre._id] = false; // Chapitres fermés par défaut
+        formationResponse.data.chapitres.forEach(chapitre => {
+          initialChapitresState[chapitre._id] = false;
           
           chapitre.parties?.forEach(partie => {
             initialPartiesState[partie._id] = false;
@@ -70,17 +90,12 @@ const FormationDetailPage = () => {
         setExpandedParties(initialPartiesState);
 
         // Sélection automatique de la première ressource disponible
-        const firstResource = findFirstResource(response.data.chapitres);
+        const firstResource = findFirstResource(formationResponse.data.chapitres);
         if (firstResource) {
           setSelectedResource(firstResource);
-          // Ouvrir automatiquement le chapitre et la partie contenant la première ressource
-          const { chapitreId, partieId } = findResourceLocation(response.data.chapitres, firstResource._id);
-          if (chapitreId) {
-            setExpandedChapitres(prev => ({ ...prev, [chapitreId]: true }));
-          }
-          if (partieId) {
-            setExpandedParties(prev => ({ ...prev, [partieId]: true }));
-          }
+          const { chapitreId, partieId } = findResourceLocation(formationResponse.data.chapitres, firstResource._id);
+          if (chapitreId) setExpandedChapitres(prev => ({ ...prev, [chapitreId]: true }));
+          if (partieId) setExpandedParties(prev => ({ ...prev, [partieId]: true }));
         }
 
       } catch (err) {
@@ -115,6 +130,97 @@ const FormationDetailPage = () => {
       }
     }
     return { chapitreId: null, partieId: null };
+  };
+
+  const calculateTotalVideos = () => {
+    let count = 0;
+    chapitres.forEach(chapitre => {
+      chapitre.parties?.forEach(partie => {
+        partie.ressources?.forEach(ressource => {
+          if (ressource.type === 'video') count++;
+        });
+      });
+    });
+    return count;
+  };
+
+  const handleVideoEnded = async () => {
+    try {
+      const token = Cookies.get('token');
+      if (!token || !selectedResource) return;
+
+      const totalVideos = calculateTotalVideos();
+      if (totalVideos === 0) return;
+
+      const response = await axios.put(
+        `http://localhost:8080/api/suivi/${id}/ressource/${selectedResource._id}`,
+        { totalRessources: totalVideos },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
+        }
+      );
+
+      setProgression(response.data.data.progression);
+      
+      if (response.data.data.progression >= 80 && !attestationDisponible) {
+        setAttestationDisponible(true);
+        toast.success('Félicitations! Vous pouvez maintenant télécharger votre attestation');
+      }
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de la progression:", error);
+    }
+  };
+
+  const handleGenerateAttestation = async () => {
+    try {
+      const token = Cookies.get('token');
+      if (!token) {
+        toast.error('Veuillez vous connecter');
+        return;
+      }
+  
+      const response = await axios.get(
+        `http://localhost:8080/api/suivi/${id}/attestation/generate`,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          },
+          withCredentials: true,
+          responseType: 'blob' // Important pour les fichiers
+        }
+      );
+  
+      // Créer un objet URL pour le blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute(
+        'download', 
+        `attestation-${formation.titre.replace(/\s+/g, '_')}.pdf`
+      );
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Nettoyage
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+  
+      toast.success('Attestation téléchargée avec succès!');
+  
+    } catch (error) {
+      console.error("Erreur téléchargement attestation:", error);
+      
+      if (error.response?.status === 403) {
+        toast.error('Vous devez avoir terminé 80% de la formation');
+      } else {
+        toast.error('Erreur lors du téléchargement. Veuillez réessayer.');
+      }
+    }
   };
 
   const handleFetchError = (err) => {
@@ -180,17 +286,38 @@ const FormationDetailPage = () => {
         return (
           <div className="h-full flex flex-col">
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-800">{selectedResource.titre}</h3>
-              <p className="text-sm text-gray-500 mt-1 flex items-center">
-                <FaVideo className="mr-1 text-blue-500" />
-                {formation?.titre} • Vidéo
-              </p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">{selectedResource.titre}</h3>
+                  <p className="text-sm text-gray-500 mt-1 flex items-center">
+                    <FaVideo className="mr-1 text-blue-500" />
+                    {formation?.titre} • Vidéo
+                  </p>
+                </div>
+                {attestationDisponible && (
+                  <button
+                    onClick={handleGenerateAttestation}
+                    className="flex items-center px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm"
+                  >
+                    <FaCertificate className="mr-2" />
+                    Télécharger attestation
+                  </button>
+                )}
+              </div>
+              <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${progression}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Progression: {progression}%</p>
             </div>
             <div className="flex-grow bg-black rounded-lg overflow-hidden">
               <video
                 controls
                 className="w-full h-full object-contain"
                 src={`http://localhost:8080/${selectedResource.url.replace(/^\/+/, "")}`}
+                onEnded={handleVideoEnded}
               />
             </div>
           </div>
@@ -205,7 +332,7 @@ const FormationDetailPage = () => {
                 {formation?.titre} • PDF
               </p>
             </div>
-            <div className="flex-grow" style={{ height: '800px' }}> {/* Hauteur augmentée */}
+            <div className="flex-grow" style={{ height: '800px' }}>
               <iframe
                 src={`http://localhost:8080/${selectedResource.url.replace(/^\/+/, "")}`}
                 className="w-full h-full rounded-lg border border-gray-200"

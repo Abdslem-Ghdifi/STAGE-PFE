@@ -9,6 +9,10 @@ const {
     removeFromPanier,
     payerPanier,
     getFormationsByApprenant,
+    updateRessourceView,
+    checkAttestation,
+    generateAttestation,
+    getUserAttestations,
     
 
 } = require("../controllers/suiviController");
@@ -28,11 +32,14 @@ router.post('/payer',authenticateUser, payerPanier);
 
 router.get('/:apprenantId/formations',authenticateUser, getFormationsByApprenant);
 
-
-
-
-
-// routes/suiviRoutes.js
+// route recupere une formation suivi
 router.get('/formationDetails/:id',authenticateUser,getFormationById);
+
+router.put('/:formationId/ressource/:ressourceId', authenticateUser,updateRessourceView);
+router.get('/:formationId/attestation/check', authenticateUser,checkAttestation);
+router.get('/:formationId/attestation/generate', authenticateUser,generateAttestation);
+
+
+router.get('/attestations', authenticateUser, getUserAttestations);
 
 module.exports = router;

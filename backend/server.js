@@ -49,6 +49,9 @@ app.use("/api/formation", formationRoute);
 app.use("/api/categorie", categorieRoute);
 app.use("/api/suivi", suiviRoute);
 
+//attestation
+app.use('/attestations', express.static(path.join(__dirname, 'public', 'attestations')));
+
 // Test route
 app.get("/", (req, res) => {
   res.send("API Running...");
