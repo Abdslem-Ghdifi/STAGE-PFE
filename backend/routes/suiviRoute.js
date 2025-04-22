@@ -13,10 +13,13 @@ const {
     checkAttestation,
     generateAttestation,
     getUserAttestations,
+    getFormationsWithRevenue,
     
 
 } = require("../controllers/suiviController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
+
+const authenticateTokenFormateur = require("../middlewares/formateurMid");
 
 // route pour recuperer le panier de l'utilisateur
 router.get('/panier',authenticateUser,getPanier);
@@ -41,5 +44,7 @@ router.get('/:formationId/attestation/generate', authenticateUser,generateAttest
 
 
 router.get('/attestations', authenticateUser, getUserAttestations);
+
+router.get('/getFormationsWithRevenue', authenticateTokenFormateur, getFormationsWithRevenue);
 
 module.exports = router;
