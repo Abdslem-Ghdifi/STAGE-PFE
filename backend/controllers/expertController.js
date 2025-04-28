@@ -28,6 +28,8 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage: storage });
 
 // Ajout d’un expert
+
+
 const addExpert = async (req, res) => {
   try {
     const { nom, prenom, email, motDePasse, image, categorie } = req.body;
@@ -47,10 +49,36 @@ const addExpert = async (req, res) => {
       email,
       motDePasse,
       image: image || (req.file ? req.file.path : null),
-      categorie: categorie || null  // on peut valider que l'ID existe aussi si tu veux
+      categorie: categorie || null,
     });
 
     await expert.save();
+
+    // Configuration du transporteur pour l'envoi d'e-mail
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+
+    // Création du message
+    const mailOptions = {
+      from: process.env.GMAIL_USER, // L'adresse de l'expéditeur
+      to: email, // L'email de l'expert
+      subject: 'Bienvenue chez ScreenLearning',
+      text: `Bonjour ${prenom} ${nom},\n\nVous avez été ajouté en tant qu'expert sur ScreenLearning. Nous sommes ravis de vous accueillir dans notre équipe !\n\nCordialement,\nL'équipe de ScreenLearning`,
+    };
+
+    // Envoi de l'e-mail
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Erreur lors de l'envoi de l'email :", error);
+        return res.status(500).json({ success: false, message: "Erreur d'envoi d'email." });
+      }
+      console.log('E-mail envoyé:', info.response);
+    });
 
     res.status(201).json({
       success: true,
@@ -61,7 +89,7 @@ const addExpert = async (req, res) => {
         prenom: expert.prenom,
         email: expert.email,
         image: expert.image,
-        categorie: expert.categorie
+        categorie: expert.categorie,
       },
     });
   } catch (error) {
