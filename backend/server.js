@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const path = require("path");
 
 // Routes
+
 const QuestionRoute = require("./routes/QuestionRoute.js");
 const userRoute = require("./routes/userRoute.js");
 const demandeRoute = require("./routes/demandeRoute");
@@ -18,7 +19,9 @@ const formateurRoute = require('./routes/formateurRouter');
 const expertRoute = require("./routes/expertRoute.js");
 const formationRoute = require('./routes/formationRoute');
 const categorieRoute = require("./routes/categorieRoute.js");
-const suiviRoute = require("./routes/suiviRoute.js")
+const suiviRoute = require("./routes/suiviRoute.js");
+
+
 
 dotenv.config();
 const app = express();
@@ -48,6 +51,8 @@ app.use("/api/expert", expertRoute);
 app.use("/api/formation", formationRoute);
 app.use("/api/categorie", categorieRoute);
 app.use("/api/suivi", suiviRoute);
+
+
 
 //attestation
 app.use('/attestations', express.static(path.join(__dirname, 'public', 'attestations')));

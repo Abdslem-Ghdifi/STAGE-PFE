@@ -1,4 +1,5 @@
 const Panier = require('../models/panierModel');
+const Avis = require('../models/avisModel');
 const Formation = require('../models/formationModel');
 const User = require('../models/userModel');
 const Suivi = require('../models/suiviModel');
@@ -205,41 +206,63 @@ const removeFromPanier = async (req, res) => {
   };
 
   // Fonction pour récupérer les formations d'un apprenant
-
   const getFormationsByApprenant = async (req, res) => {
     try {
-      // Utilisez l'ID de l'utilisateur connecté depuis le token
+      // L'ID de l'apprenant est extrait du token via le middleware d'authentification
       const apprenantId = req.user.id;
   
       // Rechercher le suivi de l'apprenant
       const suivi = await Suivi.findOne({ apprenant: apprenantId })
         .populate({
           path: 'formations.formation',
-          model: 'Formation'
+          model: 'Formation',
+          populate: [
+            {
+              path: 'formateur',
+              select: 'prenom nom image'
+            },
+            {
+              path: 'categorie',
+              select: 'nom'
+            }
+          ]
         });
   
       if (!suivi) {
-        return res.status(200).json({ formations: [] });
+        return res.status(200).json({ 
+          success: true,
+          data: {
+            formations: [],
+            count: 0
+          }
+        });
       }
   
-      // Formater la réponse de manière plus simple
+      // Formater la réponse
       const formations = suivi.formations.map(item => ({
         ...item.formation.toObject(),
         dateAjout: item.dateAjout,
-        prix: item.prix
+        prix: item.prix,
+        progression: item.progression || 0
       }));
   
-      res.status(200).json({ formations });
+      res.status(200).json({
+        success: true,
+        data: {
+          formations,
+          count: formations.length
+        }
+      });
   
     } catch (error) {
       console.error("Erreur:", error);
       res.status(500).json({ 
+        success: false,
         message: "Erreur serveur",
-        error: error.message 
+        error: error.message
       });
     }
   };
-
 
 
   // Mettre à jour la progression lorsqu'une ressource est vue
@@ -632,6 +655,188 @@ const getFormationsWithRevenue = async (req, res) => {
   }
 };
 
+// Créer un nouvel avis
+const creerAvis = async (req, res) => {
+  try {
+    const { formationId, note, commentaire } = req.body;
+    const apprenantId = req.user.id;
+
+    // Validation des données
+    if (!formationId || !note || note < 1 || note > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Données invalides. La note doit être entre 1 et 5"
+      });
+    }
+
+    // Vérifier si l'apprenant suit bien la formation
+    const suivi = await Suivi.findOne({
+      apprenant: apprenantId,
+      'formations.formation': formationId
+    });
+
+    if (!suivi) {
+      return res.status(403).json({
+        success: false,
+        message: "Vous devez suivre cette formation pour donner un avis"
+      });
+    }
+
+    // Vérifier la progression (minimum 80%)
+    const formationSuivie = suivi.formations.find(f => f.formation.equals(formationId));
+    if (formationSuivie.progression < 80) {
+      return res.status(403).json({
+        success: false,
+        message: "Vous devez avoir terminé au moins 80% de la formation pour donner un avis"
+      });
+    }
+
+    // Vérifier si l'utilisateur a déjà posté un avis
+    const avisExist = await Avis.findOne({
+      formation: formationId,
+      apprenant: apprenantId
+    });
+
+    if (avisExist) {
+      return res.status(400).json({
+        success: false,
+        message: "Vous avez déjà donné un avis pour cette formation"
+      });
+    }
+
+    // Créer le nouvel avis
+    const nouvelAvis = new Avis({
+      formation: formationId,
+      apprenant: apprenantId,
+      note,
+      commentaire
+    });
+
+    const avisEnregistre = await nouvelAvis.save();
+
+    // Mettre à jour la formation
+    await Formation.findByIdAndUpdate(
+      formationId,
+      { 
+        $push: { avis: avisEnregistre._id },
+        $inc: { nbAvis: 1 }
+      }
+    );
+
+    // Calculer la nouvelle moyenne
+    const tousAvis = await Avis.find({ formation: formationId });
+    const totalNotes = tousAvis.reduce((sum, avis) => sum + avis.note, 0);
+    const nouvelleMoyenne = totalNotes / tousAvis.length;
+
+    await Formation.findByIdAndUpdate(
+      formationId,
+      { noteMoyenne: parseFloat(nouvelleMoyenne.toFixed(1)) }
+    );
+
+    res.status(201).json({
+      success: true,
+      data: avisEnregistre,
+      newAverage: parseFloat(nouvelleMoyenne.toFixed(1))
+    });
+
+  } catch (err) {
+    console.error("Erreur dans creerAvis:", err);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+};
+
+// Récupérer tous les avis d'une formation
+const obtenirAvisFormation = async (req, res) => {
+  try {
+    const avis = await Avis.find({ formation: req.params.formationId })
+      .populate('apprenant', 'prenom nom image')
+      .sort({ date: -1 });
+
+    res.json({
+      success: true,
+      count: avis.length,
+      data: avis
+    });
+
+  } catch (err) {
+    console.error("Erreur dans obtenirAvisFormation:", err);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+};
+
+// Mettre à jour un avis
+const mettreAJourAvis = async (req, res) => {
+  try {
+    const { note, commentaire } = req.body;
+    const avis = await Avis.findById(req.params.id);
+
+    if (!avis) {
+      return res.status(404).json({
+        success: false,
+        message: "Avis non trouvé"
+      });
+    }
+
+    // Vérifier les permissions
+    if (avis.apprenant.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Action non autorisée"
+      });
+    }
+
+    // Validation de la note
+    if (note && (note < 1 || note > 5)) {
+      return res.status(400).json({
+        success: false,
+        message: "La note doit être entre 1 et 5"
+      });
+    }
+
+    // Mettre à jour l'avis
+    avis.note = note || avis.note;
+    avis.commentaire = commentaire || avis.commentaire;
+    avis.dateModification = Date.now();
+
+    const avisMisAJour = await avis.save();
+
+    // Recalculer la moyenne si la note a changé
+    if (note && note !== avis.note) {
+      const tousAvis = await Avis.find({ formation: avis.formation });
+      const totalNotes = tousAvis.reduce((sum, avis) => sum + avis.note, 0);
+      const nouvelleMoyenne = totalNotes / tousAvis.length;
+
+      await Formation.findByIdAndUpdate(
+        avis.formation,
+        { noteMoyenne: parseFloat(nouvelleMoyenne.toFixed(1)) }
+      );
+
+      avisMisAJour.newAverage = parseFloat(nouvelleMoyenne.toFixed(1));
+    }
+
+    res.json({
+      success: true,
+      data: avisMisAJour
+    });
+
+  } catch (err) {
+    console.error("Erreur dans mettreAJourAvis:", err);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+};
+
 
   module.exports = { 
     getPanier,
@@ -644,5 +849,7 @@ const getFormationsWithRevenue = async (req, res) => {
     generateAttestation,
     getUserAttestations,
     getFormationsWithRevenue,
-
+    creerAvis,
+    obtenirAvisFormation,
+    mettreAJourAvis,
    };

@@ -14,7 +14,9 @@ const {
     generateAttestation,
     getUserAttestations,
     getFormationsWithRevenue,
-    
+    creerAvis,
+  obtenirAvisFormation,
+  mettreAJourAvis
 
 } = require("../controllers/suiviController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
@@ -33,7 +35,7 @@ router.delete('/remove/:formationId', authenticateUser,removeFromPanier);
 //router pour payer panier
 router.post('/payer',authenticateUser, payerPanier);
 
-router.get('/:apprenantId/formations',authenticateUser, getFormationsByApprenant);
+router.get('/mes-formations',authenticateUser, getFormationsByApprenant);
 
 // route recupere une formation suivi
 router.get('/formationDetails/:id',authenticateUser,getFormationById);
@@ -46,5 +48,37 @@ router.get('/:formationId/attestation/generate', authenticateUser,generateAttest
 router.get('/attestations', authenticateUser, getUserAttestations);
 
 router.get('/getFormationsWithRevenue', authenticateTokenFormateur, getFormationsWithRevenue);
+
+
+
+
+
+const { check } = require('express-validator');
+
+// Routes publiques
+router.get('/formation/:formationId', obtenirAvisFormation);
+
+// Routes protégées
+router.post('/', 
+  authenticateUser,
+  [
+    check('formationId', 'ID de formation requis').notEmpty(),
+    check('note', 'Note requise entre 1 et 5').isInt({ min: 1, max: 5 }),
+    check('commentaire', 'Commentaire trop long').optional().isLength({ max: 500 })
+  ],
+  creerAvis
+);
+
+router.put('/modifier/:id',
+  authenticateUser,
+  [
+    check('note', 'Note requise entre 1 et 5').optional().isInt({ min: 1, max: 5 }),
+    check('commentaire', 'Commentaire trop long').optional().isLength({ max: 500 })
+  ],
+  mettreAJourAvis
+);
+
+
+
 
 module.exports = router;
