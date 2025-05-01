@@ -373,7 +373,7 @@ const getFormationsEnAttente = async (req, res) => {
     const formations = await Formation.find({ 
       validerParFormateur: true,
       categorie: expert.categorie,
-      accepteParExpert: 'encours'
+      
     })
     .populate({
       path: 'formateur',

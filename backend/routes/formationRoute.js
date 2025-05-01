@@ -5,6 +5,7 @@ const router = express.Router();
 const Chapitre = require('../models/chapitreModel');
 const Partie = require('../models/partieModel');
 const Ressource = require('../models/ressourceModel');
+const Formation = require('../models/formationModel');
 const {
   publierFormation,
   getFormations,
@@ -300,5 +301,21 @@ router.delete('/ressource/:id', authenticateTokenFormateur,deleteRessource);
 router.put('/:formationId/admin/accept',authenticateTokenAdmin, accepterFormationParAdmin);
 router.put('/:formationId/admin/reject',authenticateTokenAdmin, refuserFormationParAdmin);
 
+
+
+
+// Mettre à jour le statut de la formation
+router.put('/status/:id', async (req, res) => {
+  try {
+    const formation = await Formation.findByIdAndUpdate(
+      req.params.id,
+      { accepteParExpert: req.body.accepteParExpert },
+      { new: true }
+    );
+    res.json({ success: true, data: formation });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 module.exports = router;

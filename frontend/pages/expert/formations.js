@@ -7,8 +7,10 @@ import Footer from "../user/components/footer";
 
 const FormationsEnAttente = () => {
   const [formations, setFormations] = useState([]);
+  const [filteredFormations, setFilteredFormations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState("encours"); // Filtre par défaut
   const router = useRouter();
 
   useEffect(() => {
@@ -25,7 +27,7 @@ const FormationsEnAttente = () => {
         setLoading(true);
         const response = await axios.get(
           "http://localhost:8080/api/formation/en-attente",
-          {
+          { 
             headers: { 
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json"
@@ -35,7 +37,9 @@ const FormationsEnAttente = () => {
         );
 
         if (response.data.success) {
-          setFormations(response.data.data); // Accéder aux données via response.data.data
+          setFormations(response.data.data);
+          // Appliquer le filtre initial
+          filterFormations(response.data.data, activeFilter);
         } else {
           throw new Error(response.data.message || "Erreur inconnue");
         }
@@ -62,6 +66,14 @@ const FormationsEnAttente = () => {
 
     fetchFormations();
   }, [router]);
+
+  const filterFormations = (formationsList, filter) => {
+    const filtered = formationsList.filter(
+      formation => formation.accepteParExpert === filter
+    );
+    setFilteredFormations(filtered);
+    setActiveFilter(filter);
+  };
 
   const handleCardClick = (id) => {
     router.push(`/expert/formation/${id}`);
@@ -94,15 +106,71 @@ const FormationsEnAttente = () => {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">
-        Formations en attente de validation
+        Gestion des formations
       </h1>
       
+      {/* Filtres */}
+      <div className="flex justify-center mb-8 space-x-4">
+        <button
+          onClick={() => filterFormations(formations, "encours")}
+          className={`px-4 py-2 rounded-lg ${
+            activeFilter === "encours"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          En attente
+        </button>
+        <button
+          onClick={() => filterFormations(formations, "accepter")}
+          className={`px-4 py-2 rounded-lg ${
+            activeFilter === "accepter"
+              ? "bg-green-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Acceptées
+        </button>
+        <button
+          onClick={() => filterFormations(formations, "refuser")}
+          className={`px-4 py-2 rounded-lg ${
+            activeFilter === "refuser"
+              ? "bg-red-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Refusées
+        </button>
+      </div>
+      
+      {/* Affichage du statut actif */}
+      <div className="mb-6 text-center">
+        <span className="inline-block px-3 py-1 rounded-full text-sm font-medium">
+          {activeFilter === "encours" && (
+            <span className="bg-yellow-100 text-yellow-800">En cours de validation</span>
+          )}
+          {activeFilter === "accepter" && (
+            <span className="bg-green-100 text-green-800">Formations acceptées</span>
+          )}
+          {activeFilter === "refuser" && (
+            <span className="bg-red-100 text-red-800">Formations refusées</span>
+          )}
+        </span>
+      </div>
+      
+      {/* Liste des formations */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {formations.length > 0 ? (
-          formations.map((formation) => (
+        {filteredFormations.length > 0 ? (
+          filteredFormations.map((formation) => (
             <div
               key={formation._id}
-              className="bg-white rounded-lg shadow-lg overflow-hidden transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer"
+              className={`bg-white rounded-lg shadow-lg overflow-hidden transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer border-l-4 ${
+                formation.accepteParExpert === "accepter"
+                  ? "border-green-500"
+                  : formation.accepteParExpert === "refuser"
+                  ? "border-red-500"
+                  : "border-yellow-500"
+              }`}
               onClick={() => handleCardClick(formation._id)}
             >
               <div className="p-4 flex flex-col items-center">
@@ -122,6 +190,23 @@ const FormationsEnAttente = () => {
                   <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                     {formation.description}
                   </p>
+                  
+                  {/* Badge de statut */}
+                  <div className="mb-3 text-center">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      formation.accepteParExpert === "accepter"
+                        ? "bg-green-100 text-green-800"
+                        : formation.accepteParExpert === "refuser"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}>
+                      {formation.accepteParExpert === "accepter"
+                        ? "Acceptée"
+                        : formation.accepteParExpert === "refuser"
+                        ? "Refusée"
+                        : "En attente"}
+                    </span>
+                  </div>
                   
                   {formation.formateur && (
                     <div className="border-t pt-3">
@@ -161,7 +246,13 @@ const FormationsEnAttente = () => {
         ) : (
           <div className="col-span-3 text-center py-10">
             <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 inline-block">
-              <p>Aucune formation en attente dans votre catégorie</p>
+              <p>
+                {activeFilter === "encours"
+                  ? "Aucune formation en attente de validation"
+                  : activeFilter === "accepter"
+                  ? "Aucune formation acceptée"
+                  : "Aucune formation refusée"}
+              </p>
             </div>
           </div>
         )}
