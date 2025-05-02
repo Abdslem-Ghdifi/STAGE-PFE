@@ -97,6 +97,16 @@ const HeaderFormateur = () => {
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></span>
               )}
             </Link>
+
+            <Link 
+              href="/formateur/avis" 
+              className={`relative pb-1 ${isActive("/formateur/avis") ? "text-blue-600 font-medium" : "text-gray-600 hover:text-blue-600"}`}
+            >
+              Avis
+              {isActive("/formateur/avis") && (
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></span>
+              )}
+            </Link>
             
             <Link 
               href="/formateur/contact" 
@@ -183,6 +193,15 @@ const HeaderFormateur = () => {
               onClick={() => setMobileMenuOpen(false)}
             >
               Revenus
+            </Link>
+
+
+            <Link 
+              href="/formateur/avis" 
+              className={`block px-3 py-2 rounded-md ${isActive("/formateur/avis") ? "text-blue-600 font-medium bg-blue-50" : "text-gray-700 hover:bg-gray-100"}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Avis
             </Link>
             
             <Link 

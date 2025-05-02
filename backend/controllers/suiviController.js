@@ -837,6 +837,111 @@ const mettreAJourAvis = async (req, res) => {
   }
 };
 
+const getAvisFormations = async (req, res) => {
+  try {
+    const formateurId = req.formateur._id;
+
+    // 1. Récupérer toutes les formations du formateur
+    const formations = await Formation.find({ formateur: formateurId })
+      .select('_id titre image noteMoyenne');
+
+    if (!formations || formations.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "Vous n'avez aucune formation avec des avis"
+      });
+    }
+
+    // 2. Récupérer tous les avis pour ces formations
+    const avis = await Avis.find({
+      formation: { $in: formations.map(f => f._id) }
+    })
+      .populate({
+        path: 'formation',
+        select: 'titre image noteMoyenne'
+      })
+      .populate({
+        path: 'apprenant',
+        select: 'prenom nom image'
+      })
+      .sort({ date: -1 });
+
+    // 3. Calculer les stats par formation
+    const formationsWithStats = formations.map(formation => {
+      const avisFormation = avis.filter(a => a.formation._id.equals(formation._id));
+      const stats = {
+        nbAvis: avisFormation.length,
+        moyenne: avisFormation.reduce((sum, a) => sum + a.note, 0) / avisFormation.length || 0
+      };
+      return { ...formation.toObject(), stats };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: avis.length,
+      data: {
+        formations: formationsWithStats,
+        avis
+      }
+    });
+
+  } catch (err) {
+    console.error('Erreur dans getAvisFormations:', err);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur lors de la récupération des avis",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+};
+
+
+const getAvisStats = async (req, res) => {
+  try {
+    const formateurId = req.user.id;
+
+    const formations = await Formation.find({ formateur: formateurId });
+    const formationIds = formations.map(f => f._id);
+
+    const avis = await Avis.find({ formation: { $in: formationIds } });
+
+    // Calcul des stats globales
+    const stats = {
+      totalAvis: avis.length,
+      moyenneGenerale: avis.reduce((sum, a) => sum + a.note, 0) / avis.length || 0,
+      repartitionNotes: [0, 0, 0, 0, 0] 
+    };
+
+    avis.forEach(a => {
+      stats.repartitionNotes[a.note - 1]++;
+    });
+
+    // Derniers avis (5 max)
+    const derniersAvis = await Avis.find({ formation: { $in: formationIds } })
+      .sort({ date: -1 })
+      .limit(5)
+      .populate('formation', 'titre')
+      .populate('apprenant', 'prenom nom');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        stats,
+        derniersAvis
+      }
+    });
+
+  } catch (err) {
+    console.error('Erreur dans getAvisStats:', err);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur lors de la récupération des statistiques",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+};
+
 
   module.exports = { 
     getPanier,
@@ -852,4 +957,6 @@ const mettreAJourAvis = async (req, res) => {
     creerAvis,
     obtenirAvisFormation,
     mettreAJourAvis,
+    getAvisFormations,
+    getAvisStats,
    };

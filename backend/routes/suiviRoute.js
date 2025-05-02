@@ -16,7 +16,9 @@ const {
     getFormationsWithRevenue,
     creerAvis,
   obtenirAvisFormation,
-  mettreAJourAvis
+  mettreAJourAvis,
+  getAvisFormations,
+      getAvisStats,
 
 } = require("../controllers/suiviController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
@@ -77,6 +79,11 @@ router.put('/modifier/:id',
   ],
   mettreAJourAvis
 );
+
+// Routes pour les avis
+router.get('/avis-formations', authenticateTokenFormateur, getAvisFormations);
+router.get('/avis-stats', authenticateTokenFormateur, getAvisStats);
+
 
 
 
