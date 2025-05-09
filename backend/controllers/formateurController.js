@@ -212,7 +212,7 @@ const loginFormateur = async (req, res) => {
       maxAge: 60 * 60 * 1000, // 1 heure
     });
 
-    // Réponse avec succès et le token
+    
     res.status(200).json({
       success: true,
       message: "Connexion réussie.",
