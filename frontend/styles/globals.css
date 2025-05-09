@@ -2,29 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark mode styles */
-.dark {
-  --tw-bg-opacity: 1;
-  background-color: rgb(15 23 42 / var(--tw-bg-opacity));
+/* Correction générale Dark Mode */
+html.dark, body.dark {
+  background-color: #0d0d0e; /* Fond noir complet */
+  color: #fff; /* Texte blanc par défaut */
+}
+
+/* Correction pour toutes les sections */
+.dark * {
+  background-color: transparent;
   color: white;
+  border-color: #3b82f6; /* Bleu Tailwind (#3b82f6) pour les bordures */
 }
 
-.dark .dark\:bg-slate-900 {
-  background-color: rgb(15 23 42 / var(--tw-bg-opacity));
+/* Exception boutons et hover */
+.dark .bg-blue-600,
+.dark .bg-blue-500,
+.dark .hover\:bg-blue-700 {
+  background-color: #1e40af; /* Bleu foncé */
 }
 
-.dark .dark\:text-white {
-  color: white;
+/* Texte devient noir au hover sur n'importe quel élément */
+.dark a:hover,
+.dark button:hover,
+.dark .hover\:text-black:hover {
+  color: black !important;
 }
 
-.dark .dark\:text-gray-300 {
-  color: rgb(209 213 219);
-}
-
-.dark .dark\:border-gray-700 {
-  border-color: rgb(55 65 81);
-}
-
-.dark .dark\:bg-slate-800 {
-  background-color: rgb(30 41 59);
+/* Bordures spécifiques en bleu même au hover */
+.dark a:hover,
+.dark button:hover,
+.dark *:hover {
+  border-color: #3b82f6 !important; 
+  color: black;/* Bleu clair Tailwind */
 }

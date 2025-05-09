@@ -166,7 +166,7 @@ const activerFormateur = async (req, res) => {
   }
 };
 
-// Fonction pour la connexion du formateur
+// fonction pour la connexion du formateur
 const loginFormateur = async (req, res) => {
   try {
     const { email, password } = req.body;

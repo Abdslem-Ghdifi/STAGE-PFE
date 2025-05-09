@@ -23,6 +23,10 @@ const formationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Chapitre'
   }],
+  avis: [{ 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Avis'
+  }],
   prix: {
     type: Number, // Le prix de la formation
     required: true

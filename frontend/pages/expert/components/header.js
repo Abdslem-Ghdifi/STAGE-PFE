@@ -14,7 +14,7 @@ const HeaderExpert = () => {
 
       if (!token) {
         console.log("Token non trouvé");
-        window.location.href = "/expert/login"; // Rediriger vers la page de connexion
+        window.location.href = "/expert"; // Rediriger vers la page de connexion
         return;
       }
 
@@ -42,7 +42,7 @@ const HeaderExpert = () => {
 
   const handleLogout = () => {
     Cookies.remove("expertToken", { path: "/" });
-    window.location.href = "./"; // Rediriger vers la page de connexion
+    window.location.href = "./expert"; // Rediriger vers la page de connexion
   };
 
   if (loading) return <p>Chargement du profil...</p>;
@@ -52,7 +52,7 @@ const HeaderExpert = () => {
     <header className="bg-white text-blue-600 py-4 px-6 flex justify-between items-center shadow-md">
       <div className="flex items-center space-x-4">
         {/* Affichage de l'image du logo à gauche */}
-        <Link href="/expert/accueil">
+        <Link href="/accueil">
           <img
             src="/images/logo.png"  // Remplacer par le chemin de ton logo
             alt="Logo"
@@ -69,7 +69,7 @@ const HeaderExpert = () => {
           />
           
           {/* Lien sur le nom et prénom de l'expert pour accéder à son profil */}
-          <Link href="/expert/profile">
+          <Link href="/profile">
             <span className="font-semibold text-lg cursor-pointer hover:text-blue-700">{`${expert.nom} ${expert.prenom}`}</span>
           </Link>
         </div>

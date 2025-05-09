@@ -28,6 +28,17 @@ const FormationDetails = () => {
     }
   };
 
+  const checkFormationStatus = (chapitres) => {
+    if (chapitres.length === 0) return "encours";
+    
+    const allAccepted = chapitres.every(ch => ch.AcceptedParExpert === "accepter");
+    const allRejected = chapitres.every(ch => ch.AcceptedParExpert === "refuser");
+    
+    if (allAccepted) return "accepter";
+    if (allRejected) return "refuser";
+    return "encours";
+  };
+
   useEffect(() => {
     if (!id) return;
 
@@ -64,6 +75,7 @@ const FormationDetails = () => {
     setCommentaireError("");
 
     try {
+      // Mettre à jour le chapitre
       await axios.put(`http://localhost:8080/api/formation/${chapitreId}`, {
         AcceptedParExpert: isAccepted ? "accepter" : "refuser",
         commentaire: commentaire,
@@ -78,7 +90,29 @@ const FormationDetails = () => {
         [chapitreId]: isAccepted ? "accepter" : "refuser",
       }));
 
-      toast.success("Décision enregistrée !");
+      // Vérifier si tous les chapitres sont décidés
+      const allDecided = response.data.chapitres.every(
+        ch => ch.AcceptedParExpert !== "encours"
+      );
+
+      if (allDecided) {
+        const formationStatus = checkFormationStatus(response.data.chapitres);
+        
+        // Mettre à jour le statut de la formation
+        await axios.put(`http://localhost:8080/api/formation/status/${id}`, {
+          accepteParExpert: formationStatus
+        });
+
+        // Re-fetch pour avoir les dernières données
+        const updatedResponse = await axios.get(`http://localhost:8080/api/formation/${id}`);
+        setFormation(updatedResponse.data);
+
+        toast.success(
+          `Tous les chapitres sont traités. Formation ${formationStatus === "accepter" ? "acceptée" : "refusée"} !`
+        );
+      } else {
+        toast.success("Décision enregistrée !");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Erreur lors de l'enregistrement.");
@@ -120,6 +154,9 @@ const FormationDetails = () => {
                 src={formation.image}
                 alt={formation.titre}
                 className="rounded-lg w-full max-w-lg object-cover h-72"
+                onError={(e) => {
+                  e.target.src = "/default-formation.jpg";
+                }}
               />
             </div>
             <p className="text-lg text-gray-700">{formation.description}</p>
@@ -133,6 +170,22 @@ const FormationDetails = () => {
             </p>
             <p className="text-gray-600 text-sm mb-2">
               <span className="font-semibold">Formateur :</span> {formation.formateur?.prenom} {formation.formateur?.nom}
+            </p>
+            <p className="text-gray-600 text-sm mb-2">
+              <span className="font-semibold">Statut :</span> 
+              <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                formation.accepteParExpert === "accepter" 
+                  ? "bg-green-100 text-green-800" 
+                  : formation.accepteParExpert === "refuser" 
+                  ? "bg-red-100 text-red-800" 
+                  : "bg-yellow-100 text-yellow-800"
+              }`}>
+                {formation.accepteParExpert === "accepter" 
+                  ? "Acceptée" 
+                  : formation.accepteParExpert === "refuser" 
+                  ? "Refusée" 
+                  : "En attente"}
+              </span>
             </p>
             <button
               onClick={() => toggleDetails(formation._id)}
@@ -150,6 +203,9 @@ const FormationDetails = () => {
                 src={formation.formateur?.image || "/default-avatar.png"}
                 alt="Formateur"
                 className="w-24 h-24 rounded-full object-cover mr-6"
+                onError={(e) => {
+                  e.target.src = "/default-avatar.png";
+                }}
               />
               <div>
                 <h3 className="text-xl font-bold">{formation.formateur?.prenom} {formation.formateur?.nom}</h3>
