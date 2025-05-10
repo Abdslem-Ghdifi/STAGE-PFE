@@ -141,9 +141,7 @@ function Headerh() {
                 height={isScrolled ? 32 : 40}
                 className="transition-all duration-300"
               />
-              <h1 className={`font-bold text-blue-600 dark:text-blue-400 transition-all duration-300 ${isScrolled ? "text-lg" : "text-xl"}`}>
-                ScreenLearning
-              </h1>
+              
             </Link>
           </div>
 
@@ -152,7 +150,8 @@ function Headerh() {
             {[
               { path: '/user/accueil', label: 'Accueil' },
               { path: '/user/formation', label: 'Formations' },
-              { path: '/feedback', label: 'Avis' }
+              { path: '/user/apprenantContact', label: 'Contact' },
+              { path: '/user/about', label: 'A propos' }
             ].map(({ path, label }) => (
               <Link
                 key={path}
@@ -167,12 +166,7 @@ function Headerh() {
                 )}
               </Link>
             ))}
-            <button
-              onClick={handleScrollToFooter}
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-slate-800"
-            >
-              À propos
-            </button>
+            
             {isLoggedIn && (
               <Link
                 href="/user/profile"

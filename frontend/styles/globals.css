@@ -4,7 +4,7 @@
 
 /* Correction générale Dark Mode */
 html.dark, body.dark {
-  background-color: #0d0d0e; /* Fond noir complet */
+  background-color: #121238; /* Fond noir complet */
   color: #fff; /* Texte blanc par défaut */
 }
 

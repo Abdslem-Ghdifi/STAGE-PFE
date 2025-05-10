@@ -50,7 +50,7 @@ router.post('/:messageId/reply', authenticateTokenAdmin, repondreMessageAdmin);
 router.get('/msgAdmin', authenticateTokenAdmin, getMessagesAdmin);
 
 
-router.patch('/:messageId/read', authenticateTokenAdmin, markAsRead);
+router.patch('/:messageId/read', authenticateUser, markAsRead);
 router.get('/:messageId', authenticateUser, getMessageById);
 router.post('/:messageId/reply', authenticateTokenAdmin, replyToMessage);
 
