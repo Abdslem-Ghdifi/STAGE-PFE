@@ -47,7 +47,7 @@ const LoginExpert = () => {
 
         setTimeout(() => {
           // Redirection vers la page d'accueil de l'expert
-          router.push("/expert/accueil");
+          router.push("/expert/formations");
         }, 1500);
       }
     } catch (error) {

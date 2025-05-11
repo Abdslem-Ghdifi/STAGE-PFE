@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 function Footer() {
   return (
-    <footer id='footer' className="bg-gray-900 text-white py-12 relative">
+    <footer id='footer' className="bg-gray-900 text-white py-12 relative dark:bg-gray-900">
       {/* Overlay */}
       <div className="absolute inset-0 bg-gray-800 bg-opacity-90"></div>
       
@@ -21,7 +21,7 @@ function Footer() {
           </div>
 
           {/* Contact Information section - identique mais mieux organisé */}
-          <div className="bg-gray-700/30 p-6 rounded-lg">
+          <div className="bg-gray-700/30 p-6 rounded-lg ">
             <h3 className="text-lg font-semibold mb-3 border-b border-blue-500 pb-2">Contactez-nous</h3>
             <ul className="text-gray-300 text-sm space-y-3">
               <li>
