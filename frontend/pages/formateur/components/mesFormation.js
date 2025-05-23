@@ -214,7 +214,7 @@ const MesFormations = () => {
                         <img
                           src={formation.image}
                           alt={formation.titre}
-                          className="w-full h-40 object-cover rounded-lg mb-4"
+                          className="w-[120px] h-[120px] rounded-full mx-auto mb-3 object-cover hover:scale-105 transition-transform duration-300"
                         />
                       )}
                       <div className="flex-grow">
@@ -228,7 +228,7 @@ const MesFormations = () => {
                                 onClick={() => handleValiderFormation(formation._id)}
                                 className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center justify-center gap-2"
                               >
-                                <FaCheckCircle /> Valider
+                                <FaCheckCircle /> Proposer
                               </button>
                               <button
                                 onClick={() => router.push(`/formateur/formation/${formation._id}`)}

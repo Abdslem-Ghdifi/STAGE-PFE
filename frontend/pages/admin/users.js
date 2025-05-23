@@ -18,10 +18,9 @@ const UsersList = () => {
           withCredentials: true,
         });
 
-        // Afficher la réponse API pour vérifier la structure
-        console.log("Réponse API:", response.data);
+       
 
-        // Assurez-vous que la structure des utilisateurs est correcte
+        
         if (response.data.success && Array.isArray(response.data.users)) {
           setUsers(response.data.users);
         } else {
@@ -55,7 +54,7 @@ const UsersList = () => {
 
       if (response.status === 200) {
         toast.success("Utilisateur supprimé avec succès.");
-        setUsers(users.filter((user) => user.id !== userId)); // Filtrer l'utilisateur supprimé
+        setUsers(users.filter((user) => user.id !== userId)); // filtrer l'utilisateur supprimé
       }
     } catch (error) {
       console.error("Erreur lors de la suppression de l'utilisateur :", error);
@@ -73,7 +72,7 @@ const UsersList = () => {
       <Header className="fixed top-0 w-full z-50" />
       <div className="flex-grow mt-16 mb-16">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-semibold text-center mb-6">Liste des Utilisateurs</h1>
+          <h1 className="text-3xl font-semibold text-center mb-6">Liste des Apprenant</h1>
           <div className="mb-4">
             <input
               type="text"

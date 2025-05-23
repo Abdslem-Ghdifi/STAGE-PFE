@@ -378,7 +378,7 @@ const MessageriePage = () => {
         </div>
       )}
 
-      <Footer />
+     
     </div>
   );
 };

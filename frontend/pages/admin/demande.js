@@ -39,10 +39,10 @@ const FormateursPage = () => {
       console.error("Erreur lors de la suppression du formateur:", error);
       toast.error("Erreur lors de la suppression du formateur.");
     }
-    setFormateurToDelete(null); // Fermer le modal
+    setFormateurToDelete(null); 
   };
 
-  // Accepter un formateur (activer)
+
   const handleAccepter = async (formateurId) => {
     try {
       await axios.post(
@@ -128,7 +128,7 @@ const FormateursPage = () => {
                             onClick={() => handleAccepter(formateur._id)} // Activer le formateur
                             className="bg-green-500 text-white px-4 py-2 rounded-md"
                           >
-                            Accepter
+                            Activer
                           </button>
                         )}
                         <button

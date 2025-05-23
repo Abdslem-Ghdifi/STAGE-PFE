@@ -37,7 +37,7 @@ const AvisFormationsPage = () => {
   };
 
   useEffect(() => {
-    const token = Cookies.get('token');
+    const token = Cookies.get('formateurToken');
     
 
     const fetchAvisData = async () => {

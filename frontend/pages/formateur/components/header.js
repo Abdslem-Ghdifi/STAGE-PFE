@@ -73,14 +73,14 @@ const HeaderFormateur = () => {
   return (
     <>
       {/* Header Desktop */}
-      <header className={`hidden md:flex bg-white dark:bg-gray-800 py-3 px-6 z-50 w-full transition-all duration-300 ${scrolled ? "fixed top-0 left-0 shadow-md border-b border-gray-100 dark:border-gray-700" : "relative"}`}>
+      <header className={`bg-white dark:bg-slate-900 w-full z-50 transition-all duration-300 ${scrolled ? "fixed top-0 left-0 shadow-md border-b border-gray-100 dark:border-gray-700" : "relative"}`}>
         <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link href="/formateur/accueil" className="flex items-center">
             <img 
               src="/images/logo.png" 
               alt="Logo" 
-              className="h-10 w-auto dark:filter dark:brightness-0 dark:invert"
+              className="h-20 w-auto dark:filter dark:brightness-0 dark:invert"
             />
           </Link>
 

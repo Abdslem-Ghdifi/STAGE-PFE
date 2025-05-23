@@ -226,9 +226,7 @@ const Header = () => {
                   alt="Admin Avatar" 
                   className="h-9 w-9 rounded-full border-2 border-blue-500 dark:border-blue-400 object-cover" 
                 />
-                <span className="font-medium text-gray-700 dark:text-gray-300 hidden lg:inline-block">
-                  {`${admin.nom} ${admin.prenom}`}
-                </span>
+                
               </div>
               
               <button

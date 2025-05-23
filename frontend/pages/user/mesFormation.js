@@ -221,7 +221,7 @@ const MesFormationsPage = () => {
                   <img
                     src={formation.image}
                     alt={`Image de ${formation.titre}`}
-                    className="w-full h-full object-cover"
+                    className="w-[120px] h-[120px] rounded-full mx-auto mb-3 object-cover hover:scale-105 transition-transform duration-300"
                     onError={(e) => handleImageError(e)}
                   />
                 </div>

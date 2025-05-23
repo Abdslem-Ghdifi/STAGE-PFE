@@ -181,7 +181,7 @@ const LoginFormateur = () => {
             {/* Section Image - Droite */}
             <div className="hidden md:block w-1/2 relative">
               <img
-                src="/images/bienvenu.jpg"
+                src="/images/bienvenuFor.jpg"
                 alt="Connexion Formateur"
                 className="absolute inset-0 w-full h-full object-cover"
               />

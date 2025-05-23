@@ -151,7 +151,7 @@ export default function Login() {
             {/* Section Image - Droite */}
             <div className="hidden md:block w-1/2 relative">
               <img
-                src="/images/bienvenu.jpg"
+                src="/images/bienvenuApp.jpg"
                 alt="Connexion"
                 className="absolute inset-0 w-full h-full object-cover"
               />
