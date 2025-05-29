@@ -61,6 +61,18 @@ const addPanier = async (req, res) => {
         return res.status(404).json({ message: 'Formation non trouvée' });
       }
   
+      // Vérifier si l'utilisateur a déjà suivi cette formation
+      const suivi = await Suivi.findOne({ 
+        apprenant: userId,
+        'formations.formation': formationId
+      });
+      
+      if (suivi) {
+        return res.status(200).json({ 
+          message: 'Vous avez déjà suivi cette formation et ne pouvez pas l\'ajouter à nouveau au panier' 
+        });
+      }
+  
       let panier = await Panier.findOne({ apprenant: userId });
   
       // Si l'utilisateur n'a pas encore de panier
@@ -80,7 +92,6 @@ const addPanier = async (req, res) => {
           (f) => f.formation.toString() === formationId
         );
         if (dejaDansPanier) {
-          // ✅ Affichage du message sans erreur
           return res.status(200).json({ message: 'Formation déjà dans le panier' });
         }
   
@@ -93,12 +104,10 @@ const addPanier = async (req, res) => {
       await panier.save();
       return res.status(200).json({ message: 'Formation ajoutée au panier avec succès' });
     } catch (error) {
-      console.error('Erreur lors de l’ajout au panier:', error);
-      return res.status(500).json({ message: 'Erreur serveur lors de l’ajout au panier' });
+      console.error('Erreur lors de l\'ajout au panier:', error);
+      return res.status(500).json({ message: 'Erreur serveur lors de l\'ajout au panier' });
     }
-  };
-
-
+};
 
   // Supprimer une formation du panier
 const removeFromPanier = async (req, res) => {
