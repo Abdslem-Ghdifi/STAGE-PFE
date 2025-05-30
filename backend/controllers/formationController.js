@@ -613,6 +613,46 @@ const reorderChapitres = async (req, res) => {
   }
 };
 
+
+const reorderParties = async (req, res) => {
+  try {
+    const { parties } = req.body;
+    
+    const bulkOps = parties.map(partie => ({
+      updateOne: {
+        filter: { _id: partie._id },
+        update: { $set: { ordre: partie.ordre } }
+      }
+    }));
+    
+    await Partie.bulkWrite(bulkOps);
+    res.status(200).json({ message: 'Ordre des parties mis à jour' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const reorderRessources = async (req, res) => {
+  try {
+    const { ressources } = req.body;
+    
+    const bulkOps = ressources.map(ressource => ({
+      updateOne: {
+        filter: { _id: ressource._id },
+        update: { $set: { ordre: ressource.ordre } }
+      }
+    }));
+    
+    await Ressource.bulkWrite(bulkOps);
+    res.status(200).json({ message: 'Ordre des ressources mis à jour' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+
+
 const updatePartie = async (req, res) => {
   try {
     const { titre, ordre } = req.body;
@@ -831,6 +871,8 @@ module.exports = {
   updateChapitre,
   deleteChapitre,
   reorderChapitres,
+  reorderRessources,
+  reorderParties,
   updatePartie,
   deletePartie,
   updateRessource,
@@ -840,6 +882,4 @@ module.exports = {
   accepterFormationParAdmin,
   refuserFormationParAdmin,
   getFormationsPub,
-  
-  
 };

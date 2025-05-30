@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/router';
-import { FaPlus, FaTrash, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes, FaGripLines } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaChevronDown, FaChevronRight, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 import HeaderFormateur from '../components/header';
 import Footer from '@/pages/user/components/footer';
 
@@ -25,7 +25,6 @@ const GererFormation = () => {
   const [message, setMessage] = useState('');
   const [activeForm, setActiveForm] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
-  const [draggedItemType, setDraggedItemType] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({ 
     titre: '', 
@@ -34,7 +33,6 @@ const GererFormation = () => {
     url: '', 
     visibleGratuit: false 
   });
-  const [hoveredItem, setHoveredItem] = useState(null);
 
   const config = {
     headers: { Authorization: `Bearer ${token}` },
@@ -69,21 +67,20 @@ const GererFormation = () => {
     fetchData();
   }, [formationId, token]);
 
-  // Fonctions de drag and drop pour chapitres
-  const handleChapitreDragStart = (e, chapitreId) => {
+  const handleDragStart = (e, chapitreId) => {
     setDraggedItem(chapitreId);
-    setDraggedItemType('chapitre');
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget);
   };
 
-  const handleChapitreDragOver = (e, index) => {
+  const handleDragOver = (e, index) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleChapitreDrop = async (e, targetIndex) => {
+  const handleDrop = (e, targetIndex) => {
     e.preventDefault();
-    if (!draggedItem || draggedItemType !== 'chapitre') return;
+    if (!draggedItem) return;
 
     const sourceIndex = chapitres.findIndex(c => c?._id === draggedItem);
     if (sourceIndex === -1 || sourceIndex === targetIndex) return;
@@ -99,8 +96,19 @@ const GererFormation = () => {
 
     setChapitres(updatedChapitres);
     setDraggedItem(null);
-    setDraggedItemType(null);
-    await updateChapterOrder(updatedChapitres);
+    updateChapterOrder(updatedChapitres);
+  };
+
+
+  const updateChapterOrder = async (chapitres) => {
+    try {
+      await axios.put(`http://localhost:8080/api/formation/${formationId}/reorder-chapitres`, 
+        { chapitres },
+        config
+      );
+    } catch (err) {
+      setMessage("Erreur lors de la mise à jour de l'ordre des chapitres");
+    }
   };
 
   const toggleChapitre = async (chapitreId) => {
@@ -137,7 +145,38 @@ const GererFormation = () => {
     }
   };
 
-const handleInputChange = (section, key, value) => {
+  const togglePartie = async (partieId) => {
+    if (!partieId) return;
+    
+    setExpandedParties(prev => ({
+      ...prev,
+      [partieId]: !prev[partieId]
+    }));
+
+    if (!expandedParties[partieId]) {
+      try {
+        const res = await axios.get(`http://localhost:8080/api/formation/${partieId}/ressources`, config);
+        
+        const updatedChapitres = chapitres.map(chapitre => {
+          if (!chapitre?.parties) return chapitre;
+          
+          const updatedParties = chapitre.parties.map(partie => {
+            if (partie?._id === partieId) {
+              return { ...partie, ressources: res.data.ressources };
+            }
+            return partie;
+          });
+          return { ...chapitre, parties: updatedParties };
+        });
+        
+        setChapitres(updatedChapitres);
+      } catch (err) {
+        setMessage("Erreur lors du chargement des ressources");
+      }
+    }
+  };
+
+  const handleInputChange = (section, key, value) => {
     setFormInputs((prev) => ({
       ...prev,
       [section]: { ...prev[section], [key]: value },
@@ -271,8 +310,6 @@ const handleInputChange = (section, key, value) => {
       setMessage(`Erreur lors de la modification du ${editingItem.type}`);
     }
   };
-
-
 
   const ajouterChapitre = async (e) => {
     e.preventDefault();
@@ -441,171 +478,6 @@ const handleInputChange = (section, key, value) => {
     }
   };
 
-
-  const togglePartie = async (partieId) => {
-    if (!partieId) return;
-    
-    setExpandedParties(prev => ({
-      ...prev,
-      [partieId]: !prev[partieId]
-    }));
-
-    if (!expandedParties[partieId]) {
-      try {
-        const res = await axios.get(`http://localhost:8080/api/formation/${partieId}/ressources`, config);
-        
-        const updatedChapitres = chapitres.map(chapitre => {
-          if (!chapitre?.parties) return chapitre;
-          
-          const updatedParties = chapitre.parties.map(partie => {
-            if (partie?._id === partieId) {
-              return { ...partie, ressources: res.data.ressources };
-            }
-            return partie;
-          });
-          return { ...chapitre, parties: updatedParties };
-        });
-        
-        setChapitres(updatedChapitres);
-      } catch (err) {
-        setMessage("Erreur lors du chargement des ressources");
-      }
-    }
-  };
-
-
-
-  // Fonctions de drag and drop pour parties
-const handlePartieDragStart = (e, partieId, chapitreId) => {
-  e.stopPropagation();
-  setDraggedItem(partieId);
-  setDraggedItemType('partie');
-  setSelectedChapitreId(chapitreId);
-  e.dataTransfer.effectAllowed = 'move';
-};
-
-const handlePartieDragOver = (e, index) => {
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = 'move';
-};
-
-const handlePartieDrop = async (e, targetIndex) => {
-  e.preventDefault();
-  e.stopPropagation();
-  if (!draggedItem || draggedItemType !== 'partie' || !selectedChapitreId) return;
-
-  const chapitreIndex = chapitres.findIndex(c => c?._id === selectedChapitreId);
-  if (chapitreIndex === -1) return;
-
-  const parties = [...chapitres[chapitreIndex].parties];
-  const sourceIndex = parties.findIndex(p => p?._id === draggedItem);
-  if (sourceIndex === -1 || sourceIndex === targetIndex) return;
-
-  const [removed] = parties.splice(sourceIndex, 1);
-  parties.splice(targetIndex, 0, removed);
-
-  const updatedParties = parties.map((partie, index) => ({
-    ...partie,
-    ordre: index + 1
-  }));
-
-  const newChapitres = [...chapitres];
-  newChapitres[chapitreIndex] = {
-    ...newChapitres[chapitreIndex],
-    parties: updatedParties
-  };
-
-  setChapitres(newChapitres);
-  setDraggedItem(null);
-  setDraggedItemType(null);
-
-  try {
-    await axios.put(
-      `http://localhost:8080/api/formation/${selectedChapitreId}/reorder-parties`,
-      { parties: updatedParties },
-      config
-    );
-  } catch (err) {
-    setMessage("Erreur lors de la mise à jour de l'ordre des parties");
-  }
-};
-
-// Fonctions de drag and drop pour ressources
-const handleRessourceDragStart = (e, ressourceId, partieId) => {
-  e.stopPropagation();
-  setDraggedItem(ressourceId);
-  setDraggedItemType('ressource');
-  setSelectedPartieId(partieId);
-  e.dataTransfer.effectAllowed = 'move';
-};
-
-const handleRessourceDragOver = (e, index) => {
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = 'move';
-};
-
-const handleRessourceDrop = async (e, targetIndex) => {
-  e.preventDefault();
-  e.stopPropagation();
-  if (!draggedItem || draggedItemType !== 'ressource' || !selectedPartieId) return;
-
-  const chapitreIndex = chapitres.findIndex(c => 
-    c?.parties?.some(p => p?._id === selectedPartieId)
-  );
-  if (chapitreIndex === -1) return;
-
-  const partieIndex = chapitres[chapitreIndex].parties.findIndex(p => p?._id === selectedPartieId);
-  if (partieIndex === -1) return;
-
-  const ressources = [...chapitres[chapitreIndex].parties[partieIndex].ressources];
-  const sourceIndex = ressources.findIndex(r => r?._id === draggedItem);
-  if (sourceIndex === -1 || sourceIndex === targetIndex) return;
-
-  const [removed] = ressources.splice(sourceIndex, 1);
-  ressources.splice(targetIndex, 0, removed);
-
-  const updatedRessources = ressources.map((ressource, index) => ({
-    ...ressource,
-    ordre: index + 1
-  }));
-
-  const newChapitres = [...chapitres];
-  newChapitres[chapitreIndex].parties[partieIndex] = {
-    ...newChapitres[chapitreIndex].parties[partieIndex],
-    ressources: updatedRessources
-  };
-
-  setChapitres(newChapitres);
-  setDraggedItem(null);
-  setDraggedItemType(null);
-
-  try {
-    await axios.put(
-      `http://localhost:8080/api/formation/${selectedPartieId}/reorder-ressources`,
-      { ressources: updatedRessources },
-      config
-    );
-  } catch (err) {
-    setMessage("Erreur lors de la mise à jour de l'ordre des ressources");
-  }
-};
-
-
-  const updateChapterOrder = async (chapitres) => {
-    try {
-      await axios.put(`http://localhost:8080/api/formation/${formationId}/reorder-chapitres`, 
-        { chapitres },
-        config
-      );
-    } catch (err) {
-      setMessage("Erreur lors de la mise à jour de l'ordre des chapitres");
-    }
-  };
-
-
-
   const renderEditForm = () => {
     if (!editingItem || !editForm) return null;
 
@@ -749,15 +621,11 @@ const handleRessourceDrop = async (e, targetIndex) => {
                 key={chapitre?._id || index} 
                 className={`border rounded-lg overflow-hidden transition-all ${draggedItem === chapitre?._id ? 'opacity-50' : 'opacity-100'}`}
                 draggable
-                onDragStart={(e) => handleChapitreDragStart(e, chapitre?._id)}
-                onDragOver={(e) => handleChapitreDragOver(e, index)}
-                onDrop={(e) => handleChapitreDrop(e, index)}
+                onDragStart={(e) => handleDragStart(e, chapitre?._id)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
               >
-                <div 
-                  className="flex justify-between items-center p-3 bg-white cursor-pointer hover:bg-gray-50 border-b"
-                  onMouseEnter={() => setHoveredItem({type: 'chapitre', id: chapitre?._id})}
-                  onMouseLeave={() => setHoveredItem(null)}
-                >
+                <div className="flex justify-between items-center p-3 bg-white cursor-pointer hover:bg-gray-50 border-b">
                   <div 
                     className="flex items-center flex-1"
                     onClick={() => {
@@ -775,14 +643,6 @@ const handleRessourceDrop = async (e, targetIndex) => {
                   </div>
                   
                   <div className="flex space-x-1">
-                    {hoveredItem?.type === 'chapitre' && hoveredItem?.id === chapitre?._id && (
-                      <span 
-                        className="p-1 text-gray-400 hover:text-gray-600 cursor-move"
-                        title="Déplacer"
-                      >
-                        <FaGripLines />
-                      </span>
-                    )}
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -828,19 +688,8 @@ const handleRessourceDrop = async (e, targetIndex) => {
                   <ul className="ml-6 mt-2 space-y-2">
                     {chapitre?.parties?.length > 0 ? (
                       chapitre.parties.map((partie, pIndex) => (
-                        <li 
-                          key={partie?._id || pIndex} 
-                          className={`border rounded-lg overflow-hidden bg-gray-50 ${draggedItem === partie?._id ? 'opacity-50' : 'opacity-100'}`}
-                          draggable
-                          onDragStart={(e) => handlePartieDragStart(e, partie?._id, chapitre?._id)}
-                          onDragOver={(e) => handlePartieDragOver(e, pIndex)}
-                          onDrop={(e) => handlePartieDrop(e, pIndex)}
-                        >
-                          <div 
-                            className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-100 border-b"
-                            onMouseEnter={() => setHoveredItem({type: 'partie', id: partie?._id})}
-                            onMouseLeave={() => setHoveredItem(null)}
-                          >
+                        <li key={partie?._id || pIndex} className="border rounded-lg overflow-hidden bg-gray-50">
+                          <div className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-100 border-b">
                             <div 
                               className="flex items-center flex-1"
                               onClick={(e) => {
@@ -857,14 +706,6 @@ const handleRessourceDrop = async (e, targetIndex) => {
                               </span>
                             </div>
                             <div className="flex space-x-1">
-                              {hoveredItem?.type === 'partie' && hoveredItem?.id === partie?._id && (
-                                <span 
-                                  className="p-1 text-gray-400 hover:text-gray-600 cursor-move"
-                                  title="Déplacer"
-                                >
-                                  <FaGripLines />
-                                </span>
-                              )}
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -916,13 +757,7 @@ const handleRessourceDrop = async (e, targetIndex) => {
                                 partie.ressources.map((ressource, rIndex) => (
                                   <li 
                                     key={ressource?._id || rIndex} 
-                                    className={`p-2 bg-white border rounded text-sm flex justify-between items-center ${draggedItem === ressource?._id ? 'opacity-50' : 'opacity-100'}`}
-                                    draggable
-                                    onDragStart={(e) => handleRessourceDragStart(e, ressource?._id, partie?._id)}
-                                    onDragOver={(e) => handleRessourceDragOver(e, rIndex)}
-                                    onDrop={(e) => handleRessourceDrop(e, rIndex)}
-                                    onMouseEnter={() => setHoveredItem({type: 'ressource', id: ressource?._id})}
-                                    onMouseLeave={() => setHoveredItem(null)}
+                                    className="p-2 bg-white border rounded text-sm flex justify-between items-center"
                                   >
                                     <div>
                                       <span className="font-medium">{ressource?.titre || 'Sans titre'}</span>
@@ -933,14 +768,6 @@ const handleRessourceDrop = async (e, targetIndex) => {
                                       </span>
                                     </div>
                                     <div className="flex space-x-1">
-                                      {hoveredItem?.type === 'ressource' && hoveredItem?.id === ressource?._id && (
-                                        <span 
-                                          className="p-1 text-gray-400 hover:text-gray-600 cursor-move"
-                                          title="Déplacer"
-                                        >
-                                          <FaGripLines />
-                                        </span>
-                                      )}
                                       <button 
                                         onClick={() => startEditing('ressource', ressource)}
                                         className="text-blue-600 hover:text-blue-800 p-1"

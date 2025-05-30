@@ -28,6 +28,8 @@ const {
   updateChapitre,
     deleteChapitre,
     reorderChapitres,
+    reorderRessources,
+  reorderParties,
     updatePartie,
     deletePartie,
     updateRessource,
@@ -283,6 +285,7 @@ router.post('/ajouterPartieAvecRessource', async (req, res) => {
 router.put('/chapitre/:id', authenticateTokenFormateur, updateChapitre);
 router.delete('/chapitre/:id', authenticateTokenFormateur, deleteChapitre);
 router.put('/:formationId/reorder-chapitres', authenticateTokenFormateur,reorderChapitres);
+router.put('/:chapitreId/reorder-parties', authenticateTokenFormateur,reorderParties);
 
 //route pour mettre a jour une partie
 router.put('/partie/:id', authenticateTokenFormateur,updatePartie);
