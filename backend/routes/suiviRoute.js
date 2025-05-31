@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const authenticateUser =require ('../middlewares/userMID')
+const authenticateTokenAdmin = require("../middlewares/authenticateTokenAdmin");
 const router = express.Router();
 const {getFormationById} =require("../controllers/formationController")
 const { 
@@ -15,10 +16,12 @@ const {
     getUserAttestations,
     getFormationsWithRevenue,
     creerAvis,
-  obtenirAvisFormation,
-  mettreAJourAvis,
-  getAvisFormations,
-      getAvisStats,
+    obtenirAvisFormation,
+    mettreAJourAvis,
+    getAvisFormations,
+    getAvisStats,
+    getPlatformRevenue,
+    getFormateursRevenue
 
 } = require("../controllers/suiviController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
@@ -50,6 +53,7 @@ router.get('/:formationId/attestation/generate', authenticateUser,generateAttest
 router.get('/attestations', authenticateUser, getUserAttestations);
 
 router.get('/getFormationsWithRevenue', authenticateTokenFormateur, getFormationsWithRevenue);
+router.get('/revenuFromateur',authenticateTokenAdmin, getFormationsWithRevenue);
 
 
 
@@ -84,6 +88,11 @@ router.put('/modifier/:id',
 router.get('/avis-formations', authenticateTokenFormateur, getAvisFormations);
 router.get('/avis-stats', authenticateTokenFormateur, getAvisStats);
 
+
+
+//route pour stat revenu admin 
+router.get('/admin/revenus-platform', authenticateTokenAdmin, getPlatformRevenue);
+router.get('/admin/revenus-formateurs', authenticateTokenAdmin, getFormateursRevenue)
 
 
 
