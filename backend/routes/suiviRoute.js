@@ -3,6 +3,8 @@ const jwt = require("jsonwebtoken");
 const authenticateUser =require ('../middlewares/userMID')
 const authenticateTokenAdmin = require("../middlewares/authenticateTokenAdmin");
 const router = express.Router();
+const Formation = require('../models/formationModel');
+const Suivi = require('../models/suiviModel');
 const {getFormationById} =require("../controllers/formationController")
 const { 
     getPanier,
@@ -20,8 +22,11 @@ const {
     mettreAJourAvis,
     getAvisFormations,
     getAvisStats,
-    getPlatformRevenue,
-    getFormateursRevenue
+    getPlatformRevenues,
+    getFormateursRevenue,
+    getAllSuivisAdmin,
+    getSuiviDetails,
+    generateAttestationAdmin
 
 } = require("../controllers/suiviController");
 const {authenticateToken} = require("../middlewares/authMiddleware");
@@ -91,10 +96,33 @@ router.get('/avis-stats', authenticateTokenFormateur, getAvisStats);
 
 
 //route pour stat revenu admin 
-router.get('/admin/revenus-platform', authenticateTokenAdmin, getPlatformRevenue);
-router.get('/admin/revenus-formateurs', authenticateTokenAdmin, getFormateursRevenue)
+router.get('/admin/formations-publiees', async (req, res) => {
+  try {
+    const formations = await Formation.find({
+      accepteParAdmin: 'accepter',
+      publie: true
+    }).populate('formateur', 'nom email');
+    
+    res.json({
+      success: true,
+      data: formations
+    });
+  } catch (error) {
+    console.error('Formations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching published formations',
+      error: error.message
+    });
+  }
+});
 
+router.get('/suivi/getPlatformRevenues', authenticateTokenAdmin, getPlatformRevenues);
+router.get('/admin/revenus-formateurs', authenticateTokenAdmin, getFormateursRevenue);
 
+router.get('/adminSuivi', authenticateTokenAdmin, getAllSuivisAdmin);
+router.get('/:id', authenticateTokenAdmin, getSuiviDetails);
+router.post('/:suiviId/formation/:formationId/attestation', authenticateTokenAdmin, generateAttestationAdmin);
 
 
 module.exports = router;

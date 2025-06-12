@@ -100,7 +100,7 @@ const HeaderFormateur = () => {
               href="/formateur/publierFormation" 
               className={`relative pb-1 ${isActive("/formateur/publierFormation") ? "text-blue-600 dark:text-blue-400 font-medium" : "text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"}`}
             >
-              Publier
+              Créer
               {isActive("/formateur/publierFormation") && (
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 dark:bg-blue-400"></span>
               )}
@@ -223,7 +223,7 @@ const HeaderFormateur = () => {
               className={`block px-3 py-2 rounded-md ${isActive("/formateur/publierFormation") ? "text-blue-600 dark:text-blue-400 font-medium bg-blue-50 dark:bg-gray-700" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
               onClick={() => setMobileMenuOpen(false)}
             >
-              Publier
+              Créer
             </Link>
             
             <Link 

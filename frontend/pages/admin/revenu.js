@@ -1,699 +1,796 @@
-'use client';
 import { useEffect, useState } from 'react';
-import Header from './components/header';
-import Footer from './components/footer';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { FaChevronDown, FaChevronRight, FaFilePdf, FaSearch } from 'react-icons/fa';
-import { FiMoon, FiSun } from 'react-icons/fi';
 import axios from 'axios';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-import { Bar, Pie } from 'react-chartjs-2';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+  Typography,
+  Container,
+  Tooltip,
+  Box,
+  Avatar,
+  TextField,
+  Button,
+  Grid,
+  IconButton,
+  Toolbar,
+  useTheme,
+  useMediaQuery,
+  Chip,
+  LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Card,
+  CardContent
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  CheckCircle as CheckCircleIcon,
+  Pending as PendingIcon,
+  Download as DownloadIcon,
+  Visibility as VisibilityIcon,
+  Close as CloseIcon,
+  PictureAsPdf as PdfIcon
+} from '@mui/icons-material';
+import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import Footer from './components/footer';
+import Header from './components/header';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-// Enregistrer les composants nécessaires de Chart.js
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export default function AdminRevenuePage() {
-  const [data, setData] = useState(null);
+const SuiviFormationsAdmin = () => {
+  const theme = useTheme();
+  const [suivis, setSuivis] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchMonth, setSearchMonth] = useState('');
-  const [filteredData, setFilteredData] = useState(null);
-  const [expandedFormations, setExpandedFormations] = useState({});
-  const [expandedMonths, setExpandedMonths] = useState({});
-  const [darkMode, setDarkMode] = useState(false);
-  const [viewMode, setViewMode] = useState('platform');
-  const [chartData, setChartData] = useState(null);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSuivi, setSelectedSuivi] = useState(null);
+  const [openDetails, setOpenDetails] = useState(false);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    platformRevenue: 0,
+    formateurRevenue: 0,
+    formationsCount: 0,
+    completedCount: 0,
+    pendingCount: 0
+  });
+  const [chartData, setChartData] = useState([]);
 
-  // Initialiser le dark mode
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isDark = localStorage.getItem('darkMode') === 'true';
-      setDarkMode(isDark);
-      document.documentElement.classList.toggle('dark', isDark);
+  const fetchSuivis = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/suivi/adminSuivi', {
+        withCredentials: true
+      });
+      setSuivis(response.data);
+      calculateStats(response.data);
+      prepareChartData(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erreur lors de la récupération des suivis.');
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    localStorage.setItem('darkMode', newMode.toString());
-    document.documentElement.classList.toggle('dark', newMode);
   };
 
-  // Charger les données et préparer les graphiques
-  useEffect(() => {
-    // In the fetchRevenueData function inside AdminRevenuePage component
-const fetchRevenueData = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    // Récupérer d'abord les formations publiées
-    const formationsResponse = await axios.get('http://localhost:8080/api/formation/pub', {
-      withCredentials: true
+  const calculateStats = (data) => {
+    let totalRevenue = 0;
+    let platformRevenue = 0;
+    let formateurRevenue = 0;
+    let formationsCount = 0;
+    let completedCount = 0;
+    let pendingCount = 0;
+
+    data.forEach(suivi => {
+      if (suivi.datePaiement) {
+        totalRevenue += suivi.total || 0;
+        platformRevenue += (suivi.total || 0) * 0.6;
+        formateurRevenue += (suivi.total || 0) * 0.4;
+        completedCount++;
+      } else {
+        pendingCount++;
+      }
+      formationsCount += suivi.formations?.length || 0;
     });
 
-    if (!formationsResponse.data.success || !formationsResponse.data.data) {
-      throw new Error('Erreur lors de la récupération des formations');
-    }
+    setStats({
+      totalRevenue,
+      platformRevenue,
+      formateurRevenue,
+      formationsCount,
+      completedCount,
+      pendingCount
+    });
+  };
 
-    const formations = formationsResponse.data.data;
+  const prepareChartData = (data) => {
+    const revenueByMonth = {};
+    const formationPopularity = {};
 
-    // Ensuite, récupérer les revenus pour chaque formation
-    const revenueData = {
-      formations: [],
-      revenuTotalGlobal: 0
-    };
+    data.forEach(suivi => {
+      if (suivi.datePaiement) {
+        const monthYear = format(new Date(suivi.datePaiement), 'MM/yyyy');
+        if (!revenueByMonth[monthYear]) {
+          revenueByMonth[monthYear] = 0;
+        }
+        revenueByMonth[monthYear] += suivi.total || 0;
 
-    // Récupérer tous les revenus en une seule requête
-    try {
-      const endpoint = viewMode === 'platform' 
-        ? 'http://localhost:8080/api/admin/revenus-platform'
-        : 'http://localhost:8080/api/admin/revenus-formateurs';
-      
-      const revenueResponse = await axios.get(endpoint, { withCredentials: true });
-      
-      if (revenueResponse.data.success && revenueResponse.data.data) {
-        // Associer les données de revenus avec les formations
-        revenueData.formations = formations.map(formation => {
-          const revenueInfo = revenueResponse.data.data.formations.find(f => 
-            f.formation && f.formation._id === formation._id
-          );
-          
-          if (revenueInfo) {
-            revenueData.revenuTotalGlobal += revenueInfo.totalRevenu || 0;
-            return {
-              formation,
-              formateur: formation.formateur,
-              ...revenueInfo
-            };
+        suivi.formations.forEach(f => {
+          const formationName = f.formation?.titre || 'Inconnu';
+          if (!formationPopularity[formationName]) {
+            formationPopularity[formationName] = 0;
           }
-          
-          return {
-            formation,
-            formateur: formation.formateur,
-            revenusParMois: {},
-            totalRevenu: 0
-          };
-        });
-      }
-    } catch (err) {
-      console.error('Erreur lors de la récupération des revenus:', err);
-      // Si l'API des revenus échoue, initialiser avec des données vides
-      revenueData.formations = formations.map(formation => ({
-        formation,
-        formateur: formation.formateur,
-        revenusParMois: {},
-        totalRevenu: 0
-      }));
-    }
-
-    setData(revenueData);
-    setFilteredData(revenueData);
-    prepareChartData(revenueData);
-  } catch (err) {
-    console.error('Erreur lors de la récupération des données:', err);
-    setError(err.response?.data?.message || err.message || 'Erreur lors de la récupération des données');
-  } finally {
-    setLoading(false);
-  }
-};
-
-    fetchRevenueData();
-  }, [viewMode]);
-
-  // Préparer les données pour les graphiques
-  const prepareChartData = (revenueData) => {
-    if (!revenueData) return;
-
-    // Données pour le graphique à barres (revenus par mois)
-    const months = {};
-    revenueData.formations.forEach(formation => {
-      if (formation.revenusParMois) {
-        Object.entries(formation.revenusParMois).forEach(([month, info]) => {
-          if (!months[month]) months[month] = 0;
-          months[month] += info.total;
+          formationPopularity[formationName]++;
         });
       }
     });
 
-    const sortedMonths = Object.keys(months).sort((a, b) => {
-      const [aMonth, aYear] = a.split('/').map(Number);
-      const [bMonth, bYear] = b.split('/').map(Number);
-      return aYear - bYear || aMonth - bMonth;
-    });
+    const monthData = Object.entries(revenueByMonth).map(([month, revenue]) => ({
+      name: month,
+      total: revenue,
+      platform: revenue * 0.6,
+      formateur: revenue * 0.4
+    })).sort((a, b) => new Date(`01/${a.name}`) - new Date(`01/${b.name}`));
 
-    const barData = {
-      labels: sortedMonths.map(month => formatMonthYear(month)),
-      datasets: [{
-        label: `Revenus (${viewMode === 'platform' ? 'Plateforme' : 'Formateurs'})`,
-        data: sortedMonths.map(month => months[month]),
-        backgroundColor: viewMode === 'platform' 
-          ? 'rgba(54, 162, 235, 0.7)'
-          : 'rgba(75, 192, 192, 0.7)',
-        borderColor: viewMode === 'platform' 
-          ? 'rgba(54, 162, 235, 1)'
-          : 'rgba(75, 192, 192, 1)',
-        borderWidth: 1
-      }]
-    };
-
-    // Données pour le graphique circulaire (répartition par formation)
-    const formationRevenue = {};
-    revenueData.formations.forEach(formation => {
-      if (formation.totalRevenu > 0) {
-        formationRevenue[formation.formation.titre] = formation.totalRevenu;
-      }
-    });
-
-    const pieData = {
-      labels: Object.keys(formationRevenue),
-      datasets: [{
-        data: Object.values(formationRevenue),
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(255, 206, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)',
-          'rgba(255, 159, 64, 0.7)'
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-          'rgba(255, 159, 64, 1)'
-        ],
-        borderWidth: 1
-      }]
-    };
+    const formationData = Object.entries(formationPopularity).map(([name, count]) => ({
+      name,
+      count
+    })).sort((a, b) => b.count - a.count).slice(0, 5);
 
     setChartData({
-      bar: barData,
-      pie: pieData
+      monthlyRevenue: monthData,
+      popularFormations: formationData
     });
   };
 
-  // Filtrer les données par mois
   useEffect(() => {
-    if (data && searchMonth) {
-      const filtered = {
-        ...data,
-        formations: data.formations
-          .filter(formation => formation.revenusParMois && Object.keys(formation.revenusParMois).some(month => month.includes(searchMonth)))
-          .map(formation => ({
-            ...formation,
-            revenusParMois: formation.revenusParMois ? Object.fromEntries(
-              Object.entries(formation.revenusParMois)
-                .filter(([month]) => month.includes(searchMonth))
-            ) : {}
-          }))
-      };
-      setFilteredData(filtered);
-    } else if (data) {
-      setFilteredData(data);
-    }
-  }, [searchMonth, data]);
+    fetchSuivis();
+  }, []);
 
-  const formatMonthYear = (monthYearString) => {
-    const [month, year] = monthYearString.split('/');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+  const handleOpenDetails = (suivi) => {
+    setSelectedSuivi(suivi);
+    setOpenDetails(true);
   };
 
-  const formatDate = (dateString) => {
-    const options = { day: '2-digit', month: 'long', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('fr-FR', options);
+  const handleCloseDetails = () => {
+    setOpenDetails(false);
   };
 
-  const toggleFormation = (formationId) => {
-    setExpandedFormations(prev => ({
-      ...prev,
-      [formationId]: !prev[formationId]
-    }));
-  };
-
-  const toggleMonth = (formationId, month) => {
-    setExpandedMonths(prev => ({
-      ...prev,
-      [`${formationId}-${month}`]: !prev[`${formationId}-${month}`]
-    }));
-  };
+  const filteredSuivis = suivis.filter((suivi) => {
+    const matchesSearch =
+      suivi.apprenant?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      suivi.apprenant?.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      suivi.apprenant?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      suivi.formations?.some(f => 
+        f.formation?.titre?.toLowerCase().includes(searchTerm.toLowerCase())
+      ) ||
+      suivi.referencePaiement?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      suivi.total?.toString().includes(searchTerm);
+    
+    return matchesSearch;
+  });
 
   const exportToPDF = () => {
-    if (!filteredData) return;
-
     const doc = new jsPDF();
     
     // Titre principal
     doc.setFontSize(18);
-    doc.text(`Rapport des Revenus (${viewMode === 'platform' ? 'Plateforme' : 'Formateurs'})`, 105, 15, { align: 'center' });
+    doc.text('Rapport des Formations - Administration', 105, 15, { align: 'center' });
     
     // Date de génération
     doc.setFontSize(10);
-    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 105, 22, { align: 'center' });
+    doc.text(`Généré le ${format(new Date(), 'dd/MM/yyyy')}`, 105, 22, { align: 'center' });
     
-    // Total global
+    // Statistiques
     doc.setFontSize(14);
-    doc.text(`Total des revenus: ${filteredData.revenuTotalGlobal.toFixed(2)} TND`, 14, 30);
+    doc.text('Statistiques Globales', 14, 30);
     
-    let yPosition = 40;
-    
-    // Parcourir les formations
-    filteredData.formations.forEach(formation => {
-      if (formation.totalRevenu > 0) {
-        // Titre de la formation
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Formation: ${formation.formation.titre}`, 14, yPosition);
-        yPosition += 7;
-        
-        // Prix et part
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        const part = viewMode === 'platform' ? formation.formation.prix * 0.6 : formation.formation.prix * 0.4;
-        doc.text(`Prix: ${formation.formation.prix} TND | ${viewMode === 'platform' ? 'Part plateforme' : 'Part formateur'}: ${part.toFixed(2)} TND`, 14, yPosition);
-        yPosition += 7;
-        
-        // Total formation
-        doc.text(`Total pour cette formation: ${formation.totalRevenu.toFixed(2)} TND`, 14, yPosition);
-        yPosition += 10;
-        
-        // Tableau des revenus par mois (si existant)
-        if (formation.revenusParMois) {
-          const tableData = [];
-          Object.entries(formation.revenusParMois).forEach(([month, info]) => {
-            info.details.forEach(detail => {
-              tableData.push([
-                formatMonthYear(month),
-                detail.apprenant.name,
-                formatDate(detail.date),
-                `${detail.revenu.toFixed(2)} TND`,
-                viewMode === 'platform' ? detail.formateur?.name || 'N/A' : ''
-              ]);
-            });
-          });
-          
-          if (tableData.length > 0) {
-            const headers = viewMode === 'platform' 
-              ? ['Mois', 'Apprenant', 'Date', 'Revenu', 'Formateur']
-              : ['Mois', 'Apprenant', 'Date', 'Revenu'];
-              
-            autoTable(doc, {
-              startY: yPosition,
-              head: [headers],
-              body: tableData,
-              margin: { left: 14 },
-              styles: { fontSize: 8 },
-              headStyles: { fillColor: [41, 128, 185], textColor: 255 }
-            });
-            yPosition = doc.lastAutoTable.finalY + 10;
-          }
-        }
-        
-        // Ajout d'une nouvelle page si nécessaire
-        if (yPosition > 280) {
-          doc.addPage();
-          yPosition = 20;
-        }
-      }
+    // Tableau des stats
+    doc.autoTable({
+      startY: 40,
+      head: [['Statistique', 'Valeur']],
+      body: [
+        ['Revenu Total', `${stats.totalRevenue.toFixed(2)} TND`],
+        ['Part Plateforme (60%)', `${stats.platformRevenue.toFixed(2)} TND`],
+        ['Part Formateurs (40%)', `${stats.formateurRevenue.toFixed(2)} TND`],
+        ['Formations suivies', stats.formationsCount],
+        ['Paiements complétés', stats.completedCount],
+        ['Paiements en attente', stats.pendingCount]
+      ],
+      margin: { left: 14 },
+      styles: { fontSize: 10 }
     });
     
-    doc.save(`revenus-${viewMode}-${new Date().toISOString().slice(0, 10)}.pdf`);
+    let yPosition = doc.lastAutoTable.finalY + 15;
+    
+    // Détails des suivis
+    doc.setFontSize(14);
+    doc.text('Détails des Suivis', 14, yPosition);
+    yPosition += 10;
+    
+    const tableData = filteredSuivis.map(suivi => [
+      `${suivi.apprenant?.prenom} ${suivi.apprenant?.nom}`,
+      suivi.formations.map(f => f.formation?.titre).join(', '),
+      `${suivi.total?.toFixed(2)} TND`,
+      suivi.datePaiement ? 'Payé' : 'En attente',
+      suivi.datePaiement ? format(new Date(suivi.datePaiement), 'dd/MM/yyyy') : '-'
+    ]);
+    
+    doc.autoTable({
+      startY: yPosition,
+      head: [['Apprenant', 'Formations', 'Total', 'Statut', 'Date Paiement']],
+      body: tableData,
+      margin: { left: 14 },
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 }
+    });
+    
+    doc.save(`suivi-formations-admin-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
-            <p className="mt-2 dark:text-gray-300">Chargement des revenus...</p>
-          </div>
-        </main>
+      <>
+        <Header />
+        <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Container>
         <Footer />
-      </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center text-red-500 dark:text-red-400 p-4 bg-red-50 dark:bg-red-900 rounded-lg max-w-md">
-            <p className="font-medium">Erreur lors du chargement des données</p>
-            <p className="mt-2 text-sm">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Réessayer
-            </button>
-          </div>
-        </main>
+      <>
+        <Header />
+        <Container maxWidth="lg" sx={{ mt: 4 }}>
+          <Typography color="error" variant="h6" gutterBottom>
+            Erreur : {error}
+          </Typography>
+        </Container>
         <Footer />
-      </div>
+      </>
     );
   }
-
-  if (!filteredData) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center text-gray-500 dark:text-gray-400 p-4 rounded-lg">
-            <p>Aucune donnée de revenus disponible.</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  const formationsAvecRevenu = filteredData.formations.filter(f => f.totalRevenu > 0);
-
-  // Générer la liste des mois disponibles pour la recherche
-  const allMonths = [];
-  filteredData.formations.forEach(formation => {
-    if (formation.revenusParMois) {
-      Object.keys(formation.revenusParMois).forEach(month => {
-        if (!allMonths.includes(month)) {
-          allMonths.push(month);
-        }
-      });
-    }
-  });
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-      <main className="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-            Revenus {viewMode === 'platform' ? 'de la Plateforme (60%)' : 'des Formateurs (40%)'}
-          </h1>
-          
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-            <div className="relative flex-grow">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaSearch className="text-gray-400" />
-              </div>
-              <select
-                value={searchMonth}
-                onChange={(e) => setSearchMonth(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border rounded-lg appearance-none bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+    <>
+      <Header />
+      <Box sx={{ 
+        backgroundColor: theme.palette.background.default,
+        minHeight: 'calc(100vh - 128px)'
+      }}>
+        <Container maxWidth="lg">
+          <Toolbar />
+
+          <Grid container alignItems="center" spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs>
+              <Typography 
+                variant="h4" 
+                component="h1" 
+                gutterBottom 
+                sx={{ 
+                  fontWeight: 'bold',
+                  color: theme.palette.text.primary
+                }}
               >
-                <option value="">Tous les mois</option>
-                {allMonths.sort((a, b) => {
-                  const [aMonth, aYear] = a.split('/').map(Number);
-                  const [bMonth, bYear] = b.split('/').map(Number);
-                  return bYear - aYear || bMonth - aMonth;
-                }).map(month => (
-                  <option key={month} value={month}>
-                    {formatMonthYear(month)}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            
-            <button
-              onClick={exportToPDF}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <FaFilePdf className="w-5 h-5" />
-              Exporter PDF
-            </button>
-          </div>
-        </div>
+                Suivi des formations
+              </Typography>
+              <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
+                Gestion des formations suivies par les apprenants
+              </Typography>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="contained"
+                startIcon={<PdfIcon />}
+                onClick={exportToPDF}
+                sx={{
+                  backgroundColor: theme.palette.error.main,
+                  '&:hover': {
+                    backgroundColor: theme.palette.error.dark
+                  }
+                }}
+              >
+                Exporter PDF
+              </Button>
+            </Grid>
+          </Grid>
 
-        <div className="flex mb-6">
-          <button
-            onClick={() => setViewMode('platform')}
-            className={`px-4 py-2 rounded-l-lg ${viewMode === 'platform' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
+          {/* Statistiques et graphiques */}
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} md={4}>
+              <Card elevation={3}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Revenu Total
+                  </Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    {stats.totalRevenue.toFixed(2)} TND
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Plateforme (60%)
+                      </Typography>
+                      <Typography variant="body1">
+                        {stats.platformRevenue.toFixed(2)} TND
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Formateurs (40%)
+                      </Typography>
+                      <Typography variant="body1">
+                        {stats.formateurRevenue.toFixed(2)} TND
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Card elevation={3}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Formations suivies
+                  </Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    {stats.formationsCount}
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Paiements complétés
+                      </Typography>
+                      <Typography variant="body1" color="success.main">
+                        {stats.completedCount}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Paiements en attente
+                      </Typography>
+                      <Typography variant="body1" color="warning.main">
+                        {stats.pendingCount}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Card elevation={3}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Répartition des revenus
+                  </Typography>
+                  <Box sx={{ height: 150 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Plateforme', value: stats.platformRevenue },
+                            { name: 'Formateurs', value: stats.formateurRevenue }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={60}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        >
+                          <Cell fill="#0088FE" />
+                          <Cell fill="#00C49F" />
+                        </Pie>
+                        <RechartsTooltip 
+                          formatter={(value) => [`${value.toFixed(2)} TND`, 'Valeur']}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {chartData.monthlyRevenue && chartData.monthlyRevenue.length > 0 && (
+              <Grid item xs={12}>
+                <Card elevation={3}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Revenus par mois
+                    </Typography>
+                    <Box sx={{ height: 300 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={chartData.monthlyRevenue}
+                          margin={{
+                            top: 20,
+                            right: 30,
+                            left: 20,
+                            bottom: 5,
+                          }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <RechartsTooltip 
+                            formatter={(value) => [`${value.toFixed(2)} TND`, 'Valeur']}
+                          />
+                          <Legend />
+                          <Bar dataKey="platform" name="Plateforme (60%)" stackId="a" fill="#0088FE" />
+                          <Bar dataKey="formateur" name="Formateurs (40%)" stackId="a" fill="#00C49F" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
+
+            {chartData.popularFormations && chartData.popularFormations.length > 0 && (
+              <Grid item xs={12} md={6}>
+                <Card elevation={3}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Formations populaires
+                    </Typography>
+                    <Box sx={{ height: 300 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={chartData.popularFormations}
+                          layout="vertical"
+                          margin={{
+                            top: 20,
+                            right: 30,
+                            left: 20,
+                            bottom: 5,
+                          }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis dataKey="name" type="category" width={100} />
+                          <RechartsTooltip />
+                          <Legend />
+                          <Bar dataKey="count" name="Nombre d'inscriptions" fill="#8884d8" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
+          </Grid>
+
+          <Box sx={{ 
+            mb: 3, 
+            width: '100%',
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: theme.palette.background.paper,
+              '& fieldset': {
+                borderColor: theme.palette.divider,
+              },
+              '&:hover fieldset': {
+                borderColor: theme.palette.primary.main,
+              },
+            }
+          }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Rechercher par apprenant, formation, référence..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: theme.palette.text.secondary }} />,
+                sx: {
+                  color: theme.palette.text.primary,
+                }
+              }}
+              sx={{
+                borderRadius: 1,
+                '& .MuiInputBase-input': {
+                  color: theme.palette.text.primary,
+                }
+              }}
+            />
+          </Box>
+
+          <TableContainer 
+            component={Paper} 
+            elevation={3} 
+            sx={{ 
+              width: '100%', 
+              overflowX: 'auto',
+              backgroundColor: theme.palette.background.paper,
+              border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.12)'
+            }}
           >
-            Revenus Plateforme (60%)
-          </button>
-          <button
-            onClick={() => setViewMode('formateurs')}
-            className={`px-4 py-2 rounded-r-lg ${viewMode === 'formateurs' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
-          >
-            Revenus Formateurs (40%)
-          </button>
-        </div>
-
-        {/* Section des statistiques */}
-        {chartData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-                Répartition des revenus par mois
-              </h2>
-              <div className="h-80">
-                <Bar 
-                  data={chartData.bar}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: {
-                        position: 'top',
-                        labels: {
-                          color: darkMode ? '#fff' : '#333'
+            <Table sx={{ minWidth: 1000 }}>
+              <TableHead sx={{ 
+                backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100] 
+              }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>Apprenant</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>Formations</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>Progression</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>Total (TND)</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>Paiement</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredSuivis.length > 0 ? (
+                  filteredSuivis.map((suivi) => (
+                    <TableRow 
+                      key={suivi._id} 
+                      hover
+                      sx={{ 
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[100]
                         }
-                      },
-                      tooltip: {
-                        callbacks: {
-                          label: function(context) {
-                            return `${context.dataset.label}: ${context.raw.toFixed(2)} TND`;
-                          }
-                        }
-                      }
-                    },
-                    scales: {
-                      y: {
-                        beginAtZero: true,
-                        ticks: {
-                          color: darkMode ? '#fff' : '#333',
-                          callback: function(value) {
-                            return `${value} TND`;
-                          }
-                        },
-                        grid: {
-                          color: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                        }
-                      },
-                      x: {
-                        ticks: {
-                          color: darkMode ? '#fff' : '#333'
-                        },
-                        grid: {
-                          color: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                        }
-                      }
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-                Répartition par formation
-              </h2>
-              <div className="h-80">
-                <Pie 
-                  data={chartData.pie}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: {
-                        position: 'right',
-                        labels: {
-                          color: darkMode ? '#fff' : '#333'
-                        }
-                      },
-                      tooltip: {
-                        callbacks: {
-                          label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${value.toFixed(2)} TND (${percentage}%)`;
-                          }
-                        }
-                      }
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
-          <div className="flex flex-wrap justify-between items-center gap-4">
-            <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg flex-1 min-w-[200px]">
-              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">Revenu Total</h3>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                {filteredData.revenuTotalGlobal.toFixed(2)} TND
-              </p>
-            </div>
-            
-            <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg flex-1 min-w-[200px]">
-              <h3 className="text-sm font-medium text-green-800 dark:text-green-200">Formations avec revenus</h3>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                {formationsAvecRevenu.length}
-              </p>
-            </div>
-            
-            <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg flex-1 min-w-[200px]">
-              <h3 className="text-sm font-medium text-purple-800 dark:text-purple-200">Période</h3>
-              <p className="text-xl font-bold text-purple-900 dark:text-purple-100">
-                {searchMonth ? formatMonthYear(searchMonth) : 'Tous les mois'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {formationsAvecRevenu.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
-              {searchMonth 
-                ? `Aucun revenu trouvé pour ${formatMonthYear(searchMonth)}`
-                : 'Aucun revenu disponible pour le moment'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {formationsAvecRevenu.map((formation) => (
-              <div key={formation.formation._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                <button
-                  onClick={() => toggleFormation(formation.formation._id)}
-                  className="w-full flex justify-between items-center p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="text-left">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">{formation.formation.titre}</h2>
-                    <div className="flex flex-wrap items-center mt-2 gap-4">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        <span className="font-medium">Prix :</span> {formation.formation.prix} TND
-                      </span>
-                      <span className={viewMode === 'platform' ? "text-blue-600 dark:text-blue-400" : "text-green-600 dark:text-green-400"}>
-                        <span className="font-medium">Votre part :</span> {(formation.formation.prix * (viewMode === 'platform' ? 0.6 : 0.4)).toFixed(2)} TND
-                      </span>
-                      {viewMode === 'platform' && formation.formateur && (
-                        <span className="text-purple-600 dark:text-purple-400">
-                          <span className="font-medium">Formateur :</span> {formation.formateur.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium mr-4">
-                      Total : {formation.totalRevenu.toFixed(2)} TND
-                    </span>
-                    {expandedFormations[formation.formation._id] ? (
-                      <FaChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    ) : (
-                      <FaChevronRight className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    )}
-                  </div>
-                </button>
-
-                {expandedFormations[formation.formation._id] && (
-                  <div className="border-t dark:border-gray-700 p-6">
-                    <div className="space-y-4">
-                      {formation.revenusParMois && Object.entries(formation.revenusParMois).map(([mois, info]) => (
-                        <div key={mois} className="border dark:border-gray-700 rounded-lg overflow-hidden">
-                          <button
-                            onClick={() => toggleMonth(formation.formation._id, mois)}
-                            className="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                          >
-                            <div className="font-medium text-gray-800 dark:text-white">
-                              {formatMonthYear(mois)} - Total : {info.total.toFixed(2)} TND
-                            </div>
-                            {expandedMonths[`${formation.formation._id}-${mois}`] ? (
-                              <FaChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                            ) : (
-                              <FaChevronRight className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                            )}
-                          </button>
-
-                          {expandedMonths[`${formation.formation._id}-${mois}`] && (
-                            <div className="bg-white dark:bg-gray-800 p-4">
-                              <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                  <thead className="bg-gray-100 dark:bg-gray-700">
-                                    <tr>
-                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Apprenant
-                                      </th>
-                                      {viewMode === 'platform' && (
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                          Formateur
-                                        </th>
-                                      )}
-                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Date
-                                      </th>
-                                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Revenu
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    {info.details.map((detail, index) => (
-                                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                          <div className="text-sm font-medium text-gray-900 dark:text-white">{detail.apprenant.name}</div>
-                                          <div className="text-sm text-gray-500 dark:text-gray-400">{detail.apprenant.email}</div>
-                                        </td>
-                                        {viewMode === 'platform' && (
-                                          <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                              {detail.formateur?.name || 'N/A'}
-                                            </div>
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                              {detail.formateur?.email || ''}
-                                            </div>
-                                          </td>
-                                        )}
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                          {formatDate(detail.date)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
-                                          {detail.revenu.toFixed(2)} TND
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
+                      }}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar
+                            src={suivi.apprenant?.image}
+                            alt={`${suivi.apprenant?.prenom} ${suivi.apprenant?.nom}`}
+                            sx={{ width: 40, height: 40, mr: 2 }}
+                          />
+                          <Box>
+                            <Typography sx={{ fontWeight: 'medium', color: theme.palette.text.primary }}>
+                              {suivi.apprenant?.prenom} {suivi.apprenant?.nom}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                              {suivi.apprenant?.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {suivi.formations.slice(0, 2).map((formationSuivi) => (
+                            <Chip
+                              key={formationSuivi.formation?._id}
+                              label={formationSuivi.formation?.titre}
+                              size="small"
+                              avatar={<Avatar src={formationSuivi.formation?.image} />}
+                            />
+                          ))}
+                          {suivi.formations.length > 2 && (
+                            <Chip
+                              label={`+${suivi.formations.length - 2}`}
+                              size="small"
+                              variant="outlined"
+                            />
                           )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ minWidth: 150 }}>
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={suivi.formations.reduce((acc, f) => acc + f.progression, 0) / suivi.formations.length} 
+                            sx={{ height: 8, borderRadius: 4, mb: 1 }}
+                          />
+                          <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
+                            {Math.round(suivi.formations.reduce((acc, f) => acc + f.progression, 0) / suivi.formations.length)}%
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ color: theme.palette.text.primary }}>
+                        {suivi.total?.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        {suivi.datePaiement ? (
+                          <Box>
+                            <Chip
+                              icon={<CheckCircleIcon />}
+                              label="Payé"
+                              color="success"
+                              size="small"
+                              variant="outlined"
+                            />
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 1 }}>
+                              {format(new Date(suivi.datePaiement), 'dd MMM yyyy', { locale: fr })}
+                            </Typography>
+                            {suivi.referencePaiement && (
+                              <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                Ref: {suivi.referencePaiement}
+                              </Typography>
+                            )}
+                          </Box>
+                        ) : (
+                          <Chip
+                            icon={<PendingIcon />}
+                            label="En attente"
+                            color="warning"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<VisibilityIcon />}
+                          onClick={() => handleOpenDetails(suivi)}
+                        >
+                          Détails
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell 
+                      colSpan={6} 
+                      align="center"
+                      sx={{ color: theme.palette.text.secondary }}
+                    >
+                      <Typography variant="body1">
+                        Aucun suivi trouvé
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Container>
+      </Box>
+
+      {/* Dialog pour les détails */}
+      <Dialog 
+        open={openDetails} 
+        onClose={handleCloseDetails}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar
+              src={selectedSuivi?.apprenant?.image}
+              alt={`${selectedSuivi?.apprenant?.prenom} ${selectedSuivi?.apprenant?.nom}`}
+              sx={{ width: 40, height: 40, mr: 2 }}
+            />
+            <Box>
+              <Typography variant="h6">
+                {selectedSuivi?.apprenant?.prenom} {selectedSuivi?.apprenant?.nom}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedSuivi?.apprenant?.email}
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton onClick={handleCloseDetails}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedSuivi && (
+            <Box>
+              <Box sx={{ mb: 3, p: 2, backgroundColor: theme.palette.grey[100], borderRadius: 1 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="text.secondary">Total payé</Typography>
+                    <Typography variant="h5">{selectedSuivi.total?.toFixed(2)} TND</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Plateforme: {(selectedSuivi.total * 0.6).toFixed(2)} TND (60%)
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Formateurs: {(selectedSuivi.total * 0.4).toFixed(2)} TND (40%)
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="text.secondary">Date de paiement</Typography>
+                    <Typography variant="body1">
+                      {selectedSuivi.datePaiement 
+                        ? format(new Date(selectedSuivi.datePaiement), 'dd MMMM yyyy', { locale: fr })
+                        : 'Non payé'}
+                    </Typography>
+                    {selectedSuivi.referencePaiement && (
+                      <>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>
+                          Référence de paiement
+                        </Typography>
+                        <Typography variant="body1">
+                          {selectedSuivi.referencePaiement}
+                        </Typography>
+                      </>
+                    )}
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Typography variant="h6" sx={{ mb: 2 }}>Formations suivies</Typography>
+              <TableContainer component={Paper} elevation={0}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Formation</TableCell>
+                      <TableCell>Formateur</TableCell>
+                      <TableCell align="center">Progression</TableCell>
+                      <TableCell align="right">Prix</TableCell>
+                      <TableCell align="center">Revenu formateur</TableCell>
+                      <TableCell align="center">Date d'inscription</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selectedSuivi.formations.map((formationSuivi) => (
+                      <TableRow key={formationSuivi.formation?._id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar
+                              src={formationSuivi.formation?.image}
+                              alt={formationSuivi.formation?.titre}
+                              sx={{ width: 40, height: 40, mr: 2 }}
+                            />
+                            <Typography>
+                              {formationSuivi.formation?.titre}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          {formationSuivi.formation?.formateur?.prenom} {formationSuivi.formation?.formateur?.nom} 
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ width: '100%', mr: 1 }}>
+                              <LinearProgress 
+                                variant="determinate" 
+                                value={formationSuivi.progression} 
+                              />
+                            </Box>
+                            <Typography variant="body2">
+                              {formationSuivi.progression}%
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          {formationSuivi.prix?.toFixed(2)} TND
+                        </TableCell>
+                        <TableCell align="right">
+                          {(formationSuivi.prix * 0.4).toFixed(2)} TND
+                        </TableCell>
+                        
+                        <TableCell align="center">
+                          {format(new Date(formationSuivi.dateAjout), 'dd/MM/yyyy')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDetails}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
+
       <Footer />
-    </div>
+    </>
   );
-}
+};
+
+export default SuiviFormationsAdmin;

@@ -564,8 +564,6 @@ const getUserAttestations = async (req, res) => {
   }
 };
 
-
-
 const getFormationsWithRevenue = async (req, res) => {
   try {
     // Vérification de la présence du formateur
@@ -951,9 +949,9 @@ const getAvisStats = async (req, res) => {
   }
 };
 
+
 const getPlatformRevenue = async (req, res) => {
   try {
-    // Vérification admin
     if (!req.admin || !req.admin._id) {
       return res.status(401).json({
         success: false,
@@ -961,77 +959,40 @@ const getPlatformRevenue = async (req, res) => {
       });
     }
 
-    // 1. Récupérer toutes les formations publiées
+    // Récupérer toutes les formations publiées
     const formations = await Formation.find({
       accepteParAdmin: 'accepter',
       publie: true
     }).populate('formateur', 'nom email');
 
-    const formationIds = formations.map(f => f._id);
+    if (formations.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          formations: [],
+          revenuTotalGlobal: 0
+        }
+      });
+    }
 
-    // 2. Récupérer les suivis contenant ces formations
+    // Récupérer tous les suivis avec paiement
     const suivis = await Suivi.find({
-      'formations.formation': { $in: formationIds },
+      datePaiement: { $exists: true }
     })
-      .populate({
-        path: 'formations.formation',
-        select: 'titre prix formateur',
-        populate: {
-          path: 'formateur',
-          select: 'nom email'
-        }
-      })
-      .populate({
-        path: 'apprenant',
-        select: 'nom email',
-      });
-
-    // 3. Calculer les revenus
-    const formationsWithRevenue = formations.map(formation => {
-      const revenusParMois = {};
-
-      const suivisFormation = suivis.filter(suivi =>
-        suivi.formations.some(f => f.formation._id.equals(formation._id))
-      );
-
-      suivisFormation.forEach(suivi => {
-        const formationSuivi = suivi.formations.find(f => f.formation._id.equals(formation._id));
-        if (!formationSuivi || !formationSuivi.dateAjout) return;
-
-        const date = new Date(formationSuivi.dateAjout);
-        const moisAnnee = `${date.getMonth() + 1}/${date.getFullYear()}`;
-        const revenu = formation.prix * 0.6; // 60% pour la plateforme
-
-        if (!revenusParMois[moisAnnee]) {
-          revenusParMois[moisAnnee] = {
-            total: 0,
-            details: [],
-          };
-        }
-
-        revenusParMois[moisAnnee].total += revenu;
-        revenusParMois[moisAnnee].details.push({
-          apprenant: suivi.apprenant,
-          formateur: formation.formateur,
-          date: formationSuivi.dateAjout,
-          prixFormation: formation.prix,
-          revenu,
-        });
-      });
-
-      return {
-        formation: {
-          _id: formation._id,
-          titre: formation.titre,
-          prix: formation.prix,
-          formateur: formation.formateur
-        },
-        revenusParMois,
-        totalRevenu: Object.values(revenusParMois).reduce((sum, mois) => sum + mois.total, 0),
-      };
+    .populate('apprenant', 'nom email')
+    .populate({
+      path: 'formations.formation',
+      select: 'titre formateur prix',
+      populate: {
+        path: 'formateur',
+        select: 'nom email'
+      }
     });
 
-    // 4. Revenu total global
+    // Calculer les revenus (60% pour la plateforme)
+    const formationsWithRevenue = formatRevenueData(suivis, formations, 60);
+
+    // Revenu total global
     const revenuTotalGlobal = formationsWithRevenue.reduce(
       (sum, f) => sum + f.totalRevenu,
       0
@@ -1040,7 +1001,7 @@ const getPlatformRevenue = async (req, res) => {
     res.json({
       success: true,
       data: {
-        formations: formationsWithRevenue,
+        formations: formationsWithRevenue.filter(f => f.totalRevenu > 0),
         revenuTotalGlobal,
       },
     });
@@ -1055,7 +1016,6 @@ const getPlatformRevenue = async (req, res) => {
 
 const getFormateursRevenue = async (req, res) => {
   try {
-    // Vérification admin
     if (!req.admin || !req.admin._id) {
       return res.status(401).json({
         success: false,
@@ -1063,77 +1023,40 @@ const getFormateursRevenue = async (req, res) => {
       });
     }
 
-    // 1. Récupérer toutes les formations publiées
+    // Récupérer toutes les formations publiées
     const formations = await Formation.find({
       accepteParAdmin: 'accepter',
       publie: true
     }).populate('formateur', 'nom email');
 
-    const formationIds = formations.map(f => f._id);
+    if (formations.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          formations: [],
+          revenuTotalGlobal: 0
+        }
+      });
+    }
 
-    // 2. Récupérer les suivis contenant ces formations
+    // Récupérer tous les suivis avec paiement
     const suivis = await Suivi.find({
-      'formations.formation': { $in: formationIds },
+      datePaiement: { $exists: true }
     })
-      .populate({
-        path: 'formations.formation',
-        select: 'titre prix formateur',
-        populate: {
-          path: 'formateur',
-          select: 'nom email'
-        }
-      })
-      .populate({
-        path: 'apprenant',
-        select: 'nom email',
-      });
-
-    // 3. Calculer les revenus
-    const formationsWithRevenue = formations.map(formation => {
-      const revenusParMois = {};
-
-      const suivisFormation = suivis.filter(suivi =>
-        suivi.formations.some(f => f.formation._id.equals(formation._id))
-      );
-
-      suivisFormation.forEach(suivi => {
-        const formationSuivi = suivi.formations.find(f => f.formation._id.equals(formation._id));
-        if (!formationSuivi || !formationSuivi.dateAjout) return;
-
-        const date = new Date(formationSuivi.dateAjout);
-        const moisAnnee = `${date.getMonth() + 1}/${date.getFullYear()}`;
-        const revenu = formation.prix * 0.4; // 40% pour le formateur
-
-        if (!revenusParMois[moisAnnee]) {
-          revenusParMois[moisAnnee] = {
-            total: 0,
-            details: [],
-          };
-        }
-
-        revenusParMois[moisAnnee].total += revenu;
-        revenusParMois[moisAnnee].details.push({
-          apprenant: suivi.apprenant,
-          formateur: formation.formateur,
-          date: formationSuivi.dateAjout,
-          prixFormation: formation.prix,
-          revenu,
-        });
-      });
-
-      return {
-        formation: {
-          _id: formation._id,
-          titre: formation.titre,
-          prix: formation.prix,
-          formateur: formation.formateur
-        },
-        revenusParMois,
-        totalRevenu: Object.values(revenusParMois).reduce((sum, mois) => sum + mois.total, 0),
-      };
+    .populate('apprenant', 'nom email')
+    .populate({
+      path: 'formations.formation',
+      select: 'titre formateur prix',
+      populate: {
+        path: 'formateur',
+        select: 'nom email'
+      }
     });
 
-    // 4. Revenu total global
+    // Calculer les revenus (40% pour le formateur)
+    const formationsWithRevenue = formatRevenueData(suivis, formations, 40);
+
+    // Revenu total global
     const revenuTotalGlobal = formationsWithRevenue.reduce(
       (sum, f) => sum + f.totalRevenu,
       0
@@ -1142,7 +1065,7 @@ const getFormateursRevenue = async (req, res) => {
     res.json({
       success: true,
       data: {
-        formations: formationsWithRevenue,
+        formations: formationsWithRevenue.filter(f => f.totalRevenu > 0),
         revenuTotalGlobal,
       },
     });
@@ -1154,6 +1077,181 @@ const getFormateursRevenue = async (req, res) => {
     });
   }
 };
+
+const getPlatformRevenues = async (req, res) => {
+  try {
+    // Get all suivis with necessary population
+    const suivis = await Suivi.find()
+      .populate({
+        path: 'apprenant',
+        select: 'nom prenom email image'
+      })
+      .populate({
+        path: 'formations.formation',
+        select: 'titre formateur image',
+        populate: {
+          path: 'formateur',
+          select: 'nom prenom email image'
+        }
+      });
+
+    // Calculate statistics
+    const totalRevenue = suivis.reduce((acc, suivi) => acc + (suivi.total || 0), 0);
+    const platformRevenue = totalRevenue * 0.6;
+    const formateursRevenue = totalRevenue * 0.4;
+
+    // Count unique formations and learners
+    const formationsSet = new Set();
+    const apprenantsSet = new Set();
+
+    suivis.forEach(suivi => {
+      if (suivi.apprenant?._id) apprenantsSet.add(suivi.apprenant._id);
+      suivi.formations.forEach(f => {
+        if (f.formation?._id) formationsSet.add(f.formation._id);
+      });
+    });
+
+    res.json({
+      success: true,
+      suivis,
+      stats: {
+        totalRevenue,
+        platformRevenue,
+        formateursRevenue,
+        formationsCount: formationsSet.size,
+        apprenantsCount: apprenantsSet.size
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching admin suivis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des suivis'
+    });
+  }
+};
+
+const getAllSuivisAdmin = async (req, res) => {
+  try {
+    const suivis = await Suivi.find()
+      .populate({
+        path: 'apprenant',
+        select: 'nom prenom email image'
+      })
+      
+      .populate({
+        path: 'formations.formation',
+        select: 'titre image formateur',
+        populate: {
+          path: 'formateur',
+          select: 'nom prenom'
+        }
+      })
+      .sort({ createdAt: -1 });
+
+    if (!suivis || suivis.length === 0) {
+      return res.status(404).json({ message: "Aucun suivi trouvé." });
+    }
+
+    return res.json(suivis);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Erreur lors de la récupération des suivis." });
+  }
+};
+
+const getSuiviDetails = async (req, res) => {
+  try {
+    const suivi = await Suivi.findById(req.params.id)
+      .populate({
+        path: 'apprenant',
+        select: 'nom prenom email image'
+      })
+      .populate({
+        path: 'formations.formation',
+        select: 'titre description image prix formateur',
+        populate: {
+          path: 'formateur',
+          select: 'nom prenom email image'
+        }
+      })
+      .populate({
+        path: 'formations.ressourcesCompletees',
+        select: 'titre'
+      });
+
+    if (!suivi) {
+      return res.status(404).json({ message: "Suivi non trouvé." });
+    }
+
+    return res.json(suivi);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Erreur lors de la récupération du suivi." });
+  }
+};
+
+const generateAttestationAdmin = async (req, res) => {
+  try {
+    const { suiviId, formationId } = req.params;
+
+    const suivi = await Suivi.findOne({
+      _id: suiviId,
+      'formations.formation': formationId
+    });
+
+    if (!suivi) {
+      return res.status(404).json({ message: "Suivi ou formation non trouvé." });
+    }
+
+    const formationSuivi = suivi.formations.find(f => 
+      f.formation.toString() === formationId
+    );
+
+    if (!formationSuivi) {
+      return res.status(404).json({ message: "Formation non trouvée dans le suivi." });
+    }
+
+    if (formationSuivi.progression < 80) {
+      return res.status(400).json({ 
+        message: "L'apprenant n'a pas atteint le seuil de progression nécessaire (80%).",
+        progression: formationSuivi.progression
+      });
+    }
+
+    // Générer l'attestation (exemple simple)
+    const attestationData = {
+      apprenant: suivi.apprenant,
+      formation: formationSuivi.formation,
+      dateDelivrance: new Date(),
+      progression: formationSuivi.progression
+    };
+
+    // Ici vous pourriez générer un PDF et le stocker
+    const lienAttestation = `/attestations/${suiviId}/${formationId}`;
+
+    // Mettre à jour le suivi
+    formationSuivi.attestation = {
+      delivree: true,
+      dateDelivrance: new Date(),
+      lienAttestation
+    };
+
+    await suivi.save();
+
+    return res.json({
+      message: "Attestation générée avec succès.",
+      lien: lienAttestation
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Erreur lors de la génération de l'attestation." });
+  }
+};
+
+
+
 
 
   module.exports = { 
@@ -1173,5 +1271,9 @@ const getFormateursRevenue = async (req, res) => {
     getAvisFormations,
     getAvisStats,
     getPlatformRevenue,
-    getFormateursRevenue
+    getFormateursRevenue,
+    getPlatformRevenues,
+    getAllSuivisAdmin,
+    getSuiviDetails,
+    generateAttestationAdmin
    };
