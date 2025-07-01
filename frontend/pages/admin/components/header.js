@@ -190,7 +190,7 @@ const Header = () => {
             </div>
 
             <Link 
-              href="/admin/contact" 
+              href="/admin/adminContact" 
               className="relative font-medium px-3 py-2 rounded transition-colors duration-200 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
             >
               <FaEnvelope className="mr-2" />
@@ -200,6 +200,12 @@ const Header = () => {
                   {messagesCount}
                 </span>
               )}
+            </Link>
+            <Link 
+              href="/admin/revenu" 
+              className="relative font-medium px-3 py-2 rounded transition-colors duration-200 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Revenu
             </Link>
           </nav>
 
